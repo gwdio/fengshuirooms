@@ -19,14 +19,24 @@ Prefer the simplest thing that works, and don't add tooling, abstractions, or co
 
 ## Working rules
 
-- One checklist item (or a coherent slice of one) per branch/PR. Tick its box in the same PR.
-- `npm run check` must pass before anything is called done.
+- **Branches are per functional area** (`walls`, later e.g. `furniture`, `persistence`), not per task.
+  The owner won't reliably switch branches, so **at the start of every task check the current branch
+  and `git status` yourself**. If the task belongs to a different area, switch to (or create, from
+  `main`) that area's branch first. If uncommitted changes are present, don't carry them across
+  areas silently: commit them on their own branch if they clearly belong there, otherwise ask. Say
+  which branch you worked on in the summary.
+- Tick the roadmap checkbox in the same commit as the work.
+- `npm run check` must pass before anything is called done. For anything that touches canvas or
+  keyboard interaction, `npm run e2e` must pass too, and new interactions get an e2e test.
 - Logic that is "plan in → value out" (geometry, snapping, visibility, serialization, migrations)
   goes in `packages/core` with Vitest tests. `apps/web` is rendering and interaction.
 - All stored lengths are inches ([ADR-0008](docs/decisions/0008-canonical-unit-inches.md)). Never
   store display units.
 - If you change a persisted shape in `packages/core/src/model/plan.ts`, bump `SCHEMA_VERSION` and add a migration.
 - Record non-obvious, hard-to-reverse choices as ADRs (`docs/decisions/template.md`) and add them to the index.
+- Shortcuts go through the keyboard engine (`apps/web/src/input/`), never raw `keydown` listeners.
+- Konva/canvas event handlers read state via `getState()`, never render closures
+  ([frontend.md](docs/architecture/frontend.md#canvas-event-handlers)).
 - If code and docs disagree, fix whichever is wrong in the same PR.
 
 ## Decide yourself vs ask

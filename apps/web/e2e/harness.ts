@@ -1,0 +1,138 @@
+// Browser test harness: drives the real app in headless Firefox via puppeteer-core.
+// Uses the system Firefox (FIREFOX_PATH, default /usr/bin/firefox); nothing is downloaded.
+// All coordinates in tests are plan inches; helpers convert to screen pixels.
+import assert from 'node:assert/strict'
+import { after, before } from 'node:test'
+import puppeteer, { type Browser, type Page } from 'puppeteer-core'
+
+// Must match apps/web/src/editor/viewport.ts until zoom/pan exists.
+const PX_PER_INCH = 4
+
+declare global {
+  interface Window {
+    Konva: typeof import('konva').default
+  }
+}
+
+export interface App {
+  page: Page
+  /** Reloads the app with an empty plan. */
+  reset(): Promise<void>
+  click(x: number, y: number): Promise<void>
+  /** Press at (x1,y1), move in steps, release at (x2,y2). */
+  drag(x1: number, y1: number, x2: number, y2: number): Promise<void>
+  /** Clicks each point in order with the wall tool, then presses Enter. Leaves the wall tool active. */
+  drawChain(...points: [number, number][]): Promise<void>
+  key(key: string): Promise<void>
+  /** Walls as "x1,y1,x2,y2" strings in inches, sorted. */
+  walls(): Promise<string[]>
+  /** Text of the pressed toolbar buttons, e.g. "Select V | Grid snap on G". */
+  pressed(): Promise<string>
+  gridLabel(): Promise<string>
+  selectionLabel(): Promise<string>
+  /** Asserts every wall corner has exactly one handle and every handle sits on a corner. */
+  assertHandlesOnCorners(): Promise<void>
+}
+
+/** Registers before/after hooks that launch Firefox and open the app; returns the live App. */
+export function useApp(): App {
+  const baseUrl = process.env.E2E_BASE_URL
+  if (!baseUrl) throw new Error('E2E_BASE_URL not set; run through `npm run e2e`')
+  let browser: Browser
+  let origin = { x: 0, y: 0 }
+  const app = { page: undefined as unknown as Page } as App
+
+  before(async () => {
+    browser = await puppeteer.launch({
+      browser: 'firefox',
+      executablePath: process.env.FIREFOX_PATH ?? '/usr/bin/firefox',
+      headless: true,
+      // Find-as-you-type would swallow shortcut keys the app forgets to claim.
+      extraPrefsFirefox: { 'accessibility.typeaheadfind': true },
+    })
+    app.page = await browser.newPage()
+    app.page.on('pageerror', (e) => {
+      throw e
+    })
+    await app.page.setViewport({ width: 1400, height: 900 })
+    await app.reset()
+  })
+
+  after(async () => {
+    await browser?.close()
+  })
+
+  const screen = (x: number, y: number): [number, number] => [
+    origin.x + x * PX_PER_INCH,
+    origin.y + y * PX_PER_INCH,
+  ]
+
+  app.reset = async () => {
+    await app.page.goto(baseUrl, { waitUntil: 'load' })
+    await app.page.waitForFunction(() => window.Konva?.stages[0]?.width() > 0)
+    origin = await app.page.evaluate(() => {
+      const r = window.Konva.stages[0]!.container().getBoundingClientRect()
+      return { x: r.x, y: r.y }
+    })
+  }
+  app.click = async (x, y) => app.page.mouse.click(...screen(x, y))
+  app.drag = async (x1, y1, x2, y2) => {
+    await app.page.mouse.move(...screen(x1, y1))
+    await app.page.mouse.down()
+    await app.page.mouse.move(...screen(x2, y2), { steps: 10 })
+    await app.page.mouse.up()
+  }
+  app.drawChain = async (...points) => {
+    await app.key('w')
+    for (const [x, y] of points) await app.click(x, y)
+    await app.key('Enter')
+  }
+  app.key = async (key) => app.page.keyboard.press(key as Parameters<Page['keyboard']['press']>[0])
+  app.walls = async () =>
+    app.page.evaluate((ppi) => {
+      const layer = window.Konva.stages[0]!.getLayers()[1]!
+      return layer
+        .getChildren()
+        .map((g) => {
+          const line = (
+            g as unknown as { getChildren(): { points(): number[] }[] }
+          ).getChildren()[0]!
+          return line
+            .points()
+            .map((v) => v / ppi)
+            .join(',')
+        })
+        .sort()
+    }, PX_PER_INCH)
+  app.pressed = async () =>
+    app.page.$$eval('button[aria-pressed="true"]', (bs) =>
+      bs.map((b) => b.textContent?.trim()).join(' | '),
+    )
+  app.gridLabel = async () =>
+    app.page.$eval('button[title^="Snap"]', (b) => b.textContent?.trim() ?? '')
+  app.selectionLabel = async () =>
+    app.page.$eval('aside:last-of-type', (a) => a.textContent?.trim() ?? '')
+  app.assertHandlesOnCorners = async () => {
+    const { handles, corners } = await app.page.evaluate(() => {
+      const stage = window.Konva.stages[0]!
+      const corners = new Set<string>()
+      for (const g of stage.getLayers()[1]!.getChildren()) {
+        const p = (g as unknown as { getChildren(): { points(): number[] }[] })
+          .getChildren()[0]!
+          .points()
+        corners.add(`${p[0]},${p[1]}`)
+        corners.add(`${p[2]},${p[3]}`)
+      }
+      const layer = stage.getLayers()[2]
+      const handles = layer
+        ? layer
+            .getChildren()
+            .filter((n) => n.draggable())
+            .map((n) => `${n.x()},${n.y()}`)
+        : []
+      return { handles: handles.sort(), corners: [...corners].sort() }
+    })
+    assert.deepEqual(handles, corners, 'corner handles out of sync with wall corners')
+  }
+  return app
+}

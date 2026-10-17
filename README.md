@@ -31,13 +31,14 @@ npm install
 npm run dev        # http://localhost:5173
 ```
 
-| Command          | Does                                                       |
-| ---------------- | ---------------------------------------------------------- |
-| `npm run dev`    | Start the web app                                          |
-| `npm run build`  | Production build of `apps/web`                             |
-| `npm run check`  | Format check, lint, typecheck, tests, build — what CI runs |
-| `npm test`       | Vitest across workspaces                                   |
-| `npm run format` | Prettier write                                             |
+| Command          | Does                                                        |
+| ---------------- | ----------------------------------------------------------- |
+| `npm run dev`    | Start the web app                                           |
+| `npm run build`  | Production build of `apps/web`                              |
+| `npm run check`  | Format check, lint, typecheck, tests, build — what CI runs  |
+| `npm test`       | Vitest across workspaces                                    |
+| `npm run e2e`    | Browser tests in headless Firefox (needs Firefox installed) |
+| `npm run format` | Prettier write                                              |
 
 ## Repo layout
 
