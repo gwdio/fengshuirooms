@@ -31,7 +31,10 @@ export interface Plan {
 
 export interface Room {
   id: string
-  /** Ordered; consecutive walls share endpoints and the last closes back to the first. */
+  /**
+   * Straight segments in no particular order; rooms need not be closed. Connected walls share
+   * exact endpoint coordinates (the wall tool snaps to existing endpoints). Walls are never curved.
+   */
   walls: Wall[]
   features: WallFeature[]
   fixedItems: FixedItem[]

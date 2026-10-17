@@ -5,10 +5,17 @@ Untagged items are V1. Which phase builds what lives in [the roadmap](../roadmap
 
 ## Room construction
 
-- Click points on canvas to define the room outline (polygon; non-rectangular rooms supported)
+- Wall pen: click corners, or press-drag-release for a single wall; chains can stay open or close
+  back on their start. New walls can start or end anywhere along an existing wall.
+- Global snap-to-grid toggle (12" grid; G or toolbar); holding Shift inverts it.
+  Walls are always straight (no curves, ever).
 - Type exact wall lengths to override drag-defined dimensions
 - Unit toggle (imperial / metric), per-project setting — display only, storage is inches ([ADR-0008](../decisions/0008-canonical-unit-inches.md))
-- Edit walls after creation (drag corners, insert/delete points)
+- Edit walls after creation: drag corners (every wall at that corner follows; drop onto another
+  corner to merge), drag walls (only the selection moves, detaching from neighbours; a selected
+  wall's corners also detach), insert/delete points (not yet)
+- Walls that meet partway along another wall split it, so every junction is a normal corner; walls
+  that meet end-to-end in a straight line (nothing else at that corner) merge into one
 - Templates for common shapes: rectangle, L-shape, studio with alcove
 - **Floorplan image import** — upload PNG/PDF, scale by dragging over a known dimension, trace walls
   over it. The image stays as a reference layer.

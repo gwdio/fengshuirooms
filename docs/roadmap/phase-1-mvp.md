@@ -11,14 +11,24 @@ Suggested order — each item is roughly one PR:
 - [ ] localStorage persistence: auto-save on change, load last plan on start, schema-version check
 - [ ] Plan list: create / rename / delete / switch plans
 
+- [x] Browser tests (`npm run e2e`): headless Firefox, covering keyboard and wall editing
+- [x] Keyboard engine: single capture-phase listener, chord bindings with priorities, held-modifier tracking
+
 ### Room
 
-- [ ] Rectangle room tool (click-drag), walls rendered with thickness
-- [ ] Free polygon wall tool (click points, close on first point / Enter)
-- [ ] Wall length labels; type exact length to override
-- [ ] Drag corners to edit; insert/delete points
-- [ ] Doors on walls with swing arc (hinge side, in/out)
-- [ ] Windows on walls with width
+- [x] Wall pen: click corners or drag single walls; close on start point; click the last corner again (double-click) or Enter to finish; walls rendered with thickness
+- [x] Wall snapping: existing corners → points along existing walls → grid (global toggle with G or the toolbar, Shift held inverts) → whole inches
+- [x] Wall length labels (live while drawing)
+- [x] Select walls (click / shift-click) and delete them
+- [ ] Type exact wall length to override
+- [ ] Rectangle room tool (click-drag), if the pen proves slow for simple rooms
+- [x] Drag corners (select tool): snaps like the pen, drop on a corner to merge, collapsed walls removed
+- [x] Selected walls detach: dragging a wall (or a selected wall's corner) moves only the selection
+- [x] Junctions split automatically: a wall ending on another wall splits it into two at that point
+- [x] Inline walls merge automatically: end-to-end, same direction, nothing else at the corner
+- [ ] Insert/delete points on walls
+- [ ] Doors on walls with swing arc (hinge side, in/out) (deferred by owner; not in the MVP for now)
+- [ ] Windows on walls with width (deferred by owner; not in the MVP for now)
 
 ### Furniture
 

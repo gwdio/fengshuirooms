@@ -1,13 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
 import { Layer, Line, Stage } from 'react-konva'
-
-// Screen pixels per stored inch at zoom 1. Zoom/pan will scale the Stage, not this.
-const PX_PER_INCH = 4
-const GRID_INCHES = 12
+import { useEditorStore } from '../state/editorStore.ts'
+import { usePlanStore } from '../state/planStore.ts'
+import { CornerHandles } from './CornerHandles.tsx'
+import { useWallPen } from './useWallPen.tsx'
+import { WallsLayer } from './WallsLayer.tsx'
+import { GRID_INCHES, PX_PER_INCH } from './viewport.ts'
 
 export function EditorCanvas() {
   const containerRef = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState({ width: 0, height: 0 })
+  const tool = useEditorStore((s) => s.tool)
+  const setTool = useEditorStore((s) => s.setTool)
+  const select = usePlanStore((s) => s.select)
+  const pen = useWallPen(tool === 'wall', () => setTool('select'))
 
   useEffect(() => {
     const el = containerRef.current
@@ -29,10 +35,27 @@ export function EditorCanvas() {
     lines.push(<Line key={`h${y}`} points={[0, y, size.width, y]} stroke="#e5e7eb" />)
   }
 
+  const handlers =
+    tool === 'wall'
+      ? {
+          onMouseDown: pen.onMouseDown,
+          onMouseMove: pen.onMouseMove,
+          onMouseUp: pen.onMouseUp,
+          onMouseLeave: pen.onMouseLeave,
+        }
+      : { onClick: () => select([]) } // clicks on walls stop propagation, so this is empty space
+
   return (
-    <div ref={containerRef} className="h-full w-full bg-white">
-      <Stage width={size.width} height={size.height}>
+    <div
+      ref={containerRef}
+      className="h-full w-full bg-white"
+      style={{ cursor: tool === 'wall' ? 'crosshair' : 'default' }}
+    >
+      <Stage width={size.width} height={size.height} {...handlers}>
         <Layer listening={false}>{lines}</Layer>
+        <WallsLayer />
+        {tool === 'select' && <CornerHandles />}
+        {pen.preview}
       </Stage>
     </div>
   )

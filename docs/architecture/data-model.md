@@ -9,7 +9,7 @@ explains intent; the code wins if they disagree.
 Plan
 ├── schemaVersion, id, name, units, createdAt, updatedAt
 ├── rooms[]            usually 1 in V1
-│   ├── walls[]        ordered, closed polygon
+│   ├── walls[]        straight segments; need not form a closed polygon
 │   ├── features[]     doors/windows, positioned 0–1 along a wall
 │   └── fixedItems[]   outlets, vents, radiators, closets
 ├── layouts[]          alternative furniture arrangements of the same room(s)
@@ -25,6 +25,10 @@ Plan
 - **All lengths are inches** ([ADR-0008](../decisions/0008-canonical-unit-inches.md)). `units` is display only.
 - **Coordinates**: +x right, +y down (canvas convention). `PlacedItem.position` is the item's center.
   `rotation` is degrees clockwise.
+- **Walls** are straight segments, never curved. Connected walls share exact endpoint coordinates
+  (the pen snaps to existing endpoints and rounds to 1"), so "same corner" means equal `x`/`y`.
+  Walls are normalized after every edit: no endpoint lies strictly inside another wall (it gets
+  split there), and no two inline walls meet at an otherwise bare corner (they get merged). There is no separate corner/vertex entity yet ([ADR-0010](../decisions/0010-walls-as-segments.md)).
 - **IDs** are `crypto.randomUUID()` strings, never array indices — collab merges by id.
 - **Versioning**: any change to a persisted shape bumps `SCHEMA_VERSION` and adds a migration
   `vN → vN+1` in `packages/core`. Plans in localStorage and old share links must keep loading.

@@ -14,5 +14,6 @@ decision, write a new ADR that supersedes the old one and update the old one's s
 | [0007](0007-frontend-stack.md)         | React + Zustand + Tailwind, npm-workspaces monorepo  | Accepted | 2026-10-17                  |
 | [0008](0008-canonical-unit-inches.md)  | Store all lengths in inches                          | Accepted | 2026-10-17                  |
 | [0009](0009-konva-for-canvas.md)       | Konva (react-konva) for the editor canvas            | Accepted | 2026-10-17                  |
+| [0010](0010-walls-as-segments.md)      | Walls are independent straight segments              | Accepted | 2026-10-17                  |
 
 Undecided items: [open-questions.md](open-questions.md). New ADRs: copy [template.md](template.md).
