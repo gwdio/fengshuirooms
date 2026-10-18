@@ -1,8 +1,8 @@
-import { PALETTE, type PaletteEntry } from '../editor/palette.ts'
+import { PALETTE, stepEntry, type PaletteEntry } from '../editor/palette.ts'
 import { useEditDrag } from '../editor/drag.ts'
 import { PRIORITY } from '../input/keyboard.ts'
 import { useKeyBindings } from '../input/useKeyboard.ts'
-import { useEditorStore } from '../state/editorStore.ts'
+import { isElementTool, useEditorStore } from '../state/editorStore.ts'
 import { beginPaletteDrag, cancelPaletteDrag, usePaletteDrag } from '../state/paletteDrag.ts'
 
 // Left side panel. Tabs are ready for more groups (furniture, …); for now there's one tab with
@@ -18,6 +18,20 @@ export function ElementsPanel() {
   const tab = TABS[0]
 
   useKeyBindings([
+    // For now every Up/Down goes to this panel. When other things want arrows (nudging, lists),
+    // route by focus/context here instead of growing this.
+    {
+      keys: ['ArrowUp'],
+      description: 'Previous element',
+      allowRepeat: true,
+      run: () => stepElement(-1),
+    },
+    {
+      keys: ['ArrowDown'],
+      description: 'Next element',
+      allowRepeat: true,
+      run: () => stepElement(1),
+    },
     {
       keys: ['Escape'],
       description: 'Cancel dragging from the panel',
@@ -47,7 +61,10 @@ export function ElementsPanel() {
           <PaletteItem key={entry.id} entry={entry} active={tool === entry.tool} />
         ))}
       </ul>
-      <p className="px-3 text-xs text-gray-400">Drag something off the canvas to delete it.</p>
+      <p className="space-y-1 px-3 text-xs text-gray-400">
+        <span className="block">P: place the last used element · ↑/↓: switch element</span>
+        <span className="block">Drag something off the canvas to delete it.</span>
+      </p>
 
       {deleting && (
         <div
@@ -131,4 +148,10 @@ function Icon({ id }: { id: string }) {
       <path d="M6 9H22M6 11H22" strokeWidth="1" />
     </svg>
   )
+}
+
+/** Up/Down: from an element tool, move to the previous/next entry; from Select, act like P. */
+function stepElement(direction: 1 | -1) {
+  const { tool, lastElement, setTool } = useEditorStore.getState()
+  setTool(isElementTool(tool) ? stepEntry(tool, direction).tool : lastElement)
 }

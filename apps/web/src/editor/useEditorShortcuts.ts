@@ -25,6 +25,14 @@ export function useEditorShortcuts() {
       run: () => useEditorStore.getState().setTool('select'),
     },
     {
+      keys: ['p'],
+      description: 'Place: back to the last used element',
+      run: () => {
+        const { lastElement, setTool } = useEditorStore.getState()
+        setTool(lastElement)
+      },
+    },
+    {
       keys: ['g'],
       description: 'Toggle grid snap',
       run: () => useEditorStore.getState().toggleSnapToGrid(),

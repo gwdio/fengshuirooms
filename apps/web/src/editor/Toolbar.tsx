@@ -6,7 +6,7 @@ import { useEditorStore, type Tool } from '../state/editorStore.ts'
 // explains whatever tool is active.
 const HINTS: Record<Tool, string> = {
   select:
-    'Click to select · drag a wall to move it on its own · drag a door/window to slide it · drag a corner to move every wall there (only the selected ones, if any) · Delete or drag off the canvas removes (doors/windows become wall)',
+    'P places the last used element · click to select · drag a wall to move it on its own · drag a door/window to slide it · drag a corner to move every wall there (only the selected ones, if any) · Delete or drag off the canvas removes (doors/windows become wall)',
   wall: 'Click corners or drag a wall · start or end on any wall · click the start to close · double-click / Enter to finish · Backspace undoes last wall · Esc exits',
   door: 'Click a wall to add a door · Esc exits',
   window: 'Click a wall to add a window · Esc exits',

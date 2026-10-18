@@ -71,6 +71,9 @@ All shortcuts go through one engine (`src/input/`). Nothing else adds `keydown` 
 - Handled keys are `preventDefault()`ed and stopped. The engine listens on `window` in the capture
   phase, so browser features (find-as-you-type, button activation) and page elements never see them.
 - Text inputs, IME composition, and auto-repeat are ignored unless a binding opts in.
+- **Temporary routing: all ArrowUp/ArrowDown go to the elements panel** (bindings live in
+  `ElementsPanel.tsx`). When nudging or lists want arrows, route by focus or context there instead of
+  adding competing global bindings.
 - **Held modifiers**: `useHeldKey('Shift')` in render, `keyboard.isHeld('Shift')` in handlers.
   Cleared on window blur so Shift can't get stuck after alt-tab.
 

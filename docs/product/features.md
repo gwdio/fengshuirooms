@@ -8,7 +8,9 @@ Untagged items are V1. Which phase builds what lives in [the roadmap](../roadmap
 - The left panel has an **Elements** tab (more tabs, e.g. furniture, later) listing Wall, Door, and
   Window. **Click** an entry to pick its tool, or **drag** it onto the canvas to drop one in: doors and
   windows onto the wall under the pointer, a wall as a 4′ segment at the drop point. Whatever is
-  dropped is selected. There are no letter hotkeys for these tools (V still returns to Select).
+  dropped is selected. There are no per-element hotkeys. Instead **P** ("place") returns to the last
+  used element (Wall if none yet; remembered per browser), and **↑/↓** step through the entries,
+  wrapping around (from Select they act like P). V returns to Select.
 - **Drag out = delete**: drag a wall, door, or window off the canvas. While it's armed, the item turns
   faded red and the panel shows "Release to delete". Releasing deletes (doors/windows turn back into
   wall); moving back onto the canvas first cancels.

@@ -42,7 +42,10 @@ export function beginPaletteDrag(entryId: string, start: Point): void {
     }
     const client = { x: e.clientX, y: e.clientY }
     const stage = isOverCanvas(client) ? clientToStage(client) : undefined
-    if (stage) dropAndSelect(entry, stage)
+    if (stage) {
+      dropAndSelect(entry, stage)
+      useEditorStore.getState().noteElementUsed(entry.tool)
+    }
   }
   const stop = () => {
     window.removeEventListener('pointermove', move)

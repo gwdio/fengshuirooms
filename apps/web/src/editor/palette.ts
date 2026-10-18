@@ -4,7 +4,7 @@ import {
   type Point,
   type Wall,
 } from '@space-planner/core'
-import type { Tool } from '../state/editorStore.ts'
+import type { ElementTool } from '../state/editorStore.ts'
 import { useSelection } from '../state/selectionStore.ts'
 import { addWall, getWalls, placeOpening } from '../walls/walls.ts'
 import { findOpeningHost, snapScreenPoint } from './snapping.ts'
@@ -17,7 +17,7 @@ export interface PaletteEntry {
   label: string
   description: string
   /** Tool selected when the entry is clicked. */
-  tool: Tool
+  tool: ElementTool
   /** What would be created by dropping at `stage` (px), for the ghost; undefined if nothing. */
   ghost(stage: Point): Wall | undefined
   /** Drops one in at `stage` (px). Returns the new entity's id. */
@@ -74,4 +74,10 @@ export const PALETTE: readonly PaletteEntry[] = [
 export function dropAndSelect(entry: PaletteEntry, stage: Point): void {
   const id = entry.drop(stage)
   if (id && getWalls().some((w) => w.id === id)) useSelection.getState().select([id])
+}
+
+/** The entry before/after the one for `tool`, wrapping around (Up/Down in the panel). */
+export function stepEntry(tool: ElementTool, direction: 1 | -1): PaletteEntry {
+  const i = PALETTE.findIndex((p) => p.tool === tool)
+  return PALETTE[(i + direction + PALETTE.length) % PALETTE.length]!
 }
