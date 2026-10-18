@@ -4,6 +4,7 @@ import { useEditorStore } from '../state/editorStore.ts'
 import { useSelection } from '../state/selectionStore.ts'
 import { deleteSegments } from '../walls/walls.ts'
 import { EDITOR_TOOLS } from './editorTools.ts'
+import { fitToPlan, resetZoom, zoomBy } from './viewport.ts'
 
 /** App-wide editor shortcuts. Tool-specific keys are registered by the tool itself. */
 export function useEditorShortcuts() {
@@ -21,6 +22,28 @@ export function useEditorShortcuts() {
       run: redo,
     },
     ...EDITOR_TOOLS.map((t) => ({ keys: [t.key], description: t.description, run: t.activate })),
+    {
+      keys: ['Mod+=', 'Mod++', 'Mod+Shift++'],
+      description: 'Zoom in',
+      allowRepeat: true,
+      run: () => zoomBy(1.25),
+    },
+    {
+      keys: ['Mod+-'],
+      description: 'Zoom out',
+      allowRepeat: true,
+      run: () => zoomBy(1 / 1.25),
+    },
+    { keys: ['Mod+0'], description: 'Zoom to 100%', run: resetZoom },
+    { keys: ['Shift+!', 'Shift+1'], description: 'Fit plan to view', run: fitToPlan },
+    {
+      // Hold Space to pan (useCanvasNavigation). Claimed so it doesn't scroll the page or press
+      // a focused button.
+      keys: ['Space'],
+      description: 'Hold to pan',
+      allowRepeat: true,
+      run: () => {},
+    },
     {
       keys: ['g'],
       description: 'Toggle grid snap',

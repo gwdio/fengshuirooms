@@ -85,6 +85,21 @@ All shortcuts go through one engine (`src/input/`). Nothing else adds `keydown` 
 - **Held modifiers**: `useHeldKey('Shift')` in render, `keyboard.isHeld('Shift')` in handlers.
   Cleared on window blur so Shift can't get stuck after alt-tab.
 
+## Viewport (zoom and pan)
+
+The world↔screen transform is `screen = world × PX_PER_INCH × scale + offset` (`core/geometry/viewport.ts`,
+pure and tested). `editor/viewport.ts` holds the current `Viewport` in a store, and **everything converts
+through `toScreen`/`toWorld`/`pxPerInch`/`screenToWorldDistance`**. Nothing hard-codes a pixel scale.
+
+- Rendering stays in screen space (no Konva stage transform), so handles, labels, and snap radii
+  keep their on-screen size at any zoom while wall thickness scales. Components that draw with
+  `toScreen` must call `useViewport()` so they redraw on zoom/pan.
+- Input (`editor/useCanvasNavigation.ts`) uses DOM listeners on the canvas container. Wheel zooms
+  toward the pointer. Middle-drag or Space+left-drag pan, and those presses are stopped in the
+  capture phase so tools and Konva never see them.
+- The grid draws only the visible area and coarsens (×5, ×2, …) when lines would be under 10px apart.
+- The view is a local setting (`viewport`), saved per browser rather than per plan.
+
 ## Canvas event handlers
 
 Konva delivers mouse events outside React's event system, so React may not re-render between a
@@ -117,8 +132,9 @@ Don't use Konva's `dblclick`: it fires for any two clicks within 400ms, even far
 - **Browser** (`apps/web/e2e/*.e2e.ts`, `node:test` + `puppeteer-core`): drives the real app in
   headless Firefox, using the system install (`FIREFOX_PATH`, default `/usr/bin/firefox`); no browser
   download. `npm run e2e` starts Vite in-process, runs every file, and stops it. `npm run e2e -- corners`
-  runs only files whose name contains `corners`. Tests use plan inches. They read wall geometry
-  straight from the Konva stage (`window.Konva`) and assert invariants such as "one handle per corner".
+  runs only files whose name contains `corners`. Tests use plan inches (at the default view) or
+  `canvasPx` for raw pixels. Wall geometry is read from each wall Line's `world` attr via `window.Konva`,
+  so it's correct at any zoom. Tests also assert invariants such as "one handle per corner".
 - `npm run e2e` is deliberately **not** in `npm run check` or CI. It's slow, and fast iteration
   matters more right now than making GitHub runners do it on every push. Run it locally for any
   canvas or keyboard change. If it's wired into CI later, the plan is to run it only on merges to

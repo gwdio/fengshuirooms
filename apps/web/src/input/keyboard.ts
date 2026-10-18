@@ -9,7 +9,8 @@
 //   back-navigation on Backspace) never sees it.
 // - Keys are ignored while typing in inputs or during IME composition, and auto-repeat is ignored
 //   unless a binding opts in.
-// - Held keys (e.g. Shift for grid-snap inversion) are tracked and cleared on window blur.
+// - Held keys (Shift for grid-snap inversion, Space for panning) are tracked and cleared on blur.
+//   "Space" is accepted as a chord name for the space bar.
 
 export interface KeyEventLike {
   key: string
@@ -55,10 +56,23 @@ interface Chord {
 }
 
 const MODIFIER_KEYS = new Set(['Shift', 'Control', 'Alt', 'Meta'])
+/** Keys whose held state is tracked: modifiers, plus Space (hold to pan). */
+const HELD_KEYS = new Set([...MODIFIER_KEYS, ' '])
 
 export function parseChord(chord: string): Chord {
-  const parts = chord.split('+')
-  const key = parts.pop()
+  // "+" separates parts, so the plus key itself is written "+" alone or with a trailing "++".
+  let key: string | undefined
+  let parts: string[]
+  if (chord === '+') {
+    key = '+'
+    parts = []
+  } else if (chord.endsWith('++')) {
+    key = '+'
+    parts = chord.slice(0, -2).split('+')
+  } else {
+    parts = chord.split('+')
+    key = parts.pop()
+  }
   if (!key) throw new Error(`Invalid chord: "${chord}"`)
   const mods = new Set(parts.map((p) => p.toLowerCase()))
   for (const m of mods) {
@@ -74,6 +88,7 @@ export function parseChord(chord: string): Chord {
 }
 
 function normalizeKeyName(key: string): string {
+  if (key === 'Space') return ' '
   return key.length === 1 ? key.toLowerCase() : key
 }
 
@@ -176,8 +191,7 @@ export class KeyboardEngine {
   }
 
   private setHeld(key: string, down: boolean) {
-    // Only modifiers are tracked; that's all anything needs so far.
-    if (!MODIFIER_KEYS.has(key)) return
+    if (!HELD_KEYS.has(key)) return
     if (down === this.held.has(key)) return
     if (down) this.held.add(key)
     else this.held.delete(key)

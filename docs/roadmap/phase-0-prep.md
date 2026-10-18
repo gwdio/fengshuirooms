@@ -10,6 +10,6 @@
 - [x] oxlint, Prettier, Vitest; `npm run check` runs everything
 - [x] `terraform/` placeholder: module READMEs only ([ADR-0006](../decisions/0006-terraform-layout.md))
 - [x] GitHub Actions: `npm run check` on PRs (no deploys)
-- [ ] Confirm CI goes green on GitHub after first push
+- [x] Confirm CI goes green on GitHub after first push (2026-10-18)
 
 **Exit:** `npm run check` green locally and in CI.

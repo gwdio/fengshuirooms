@@ -7,7 +7,7 @@ import { useHeldKey, useKeyBindings } from '../input/useKeyboard.ts'
 import { useEditorStore } from '../state/editorStore.ts'
 import { getWalls, placeOpening, useWalls } from '../walls/walls.ts'
 import { findOpeningHost } from './snapping.ts'
-import { PX_PER_INCH, toScreen } from './viewport.ts'
+import { pxPerInch, toScreen, useViewport } from './viewport.ts'
 
 // Door/window tool: hover a wall to preview the opening, click to cut it in. Stays active for
 // more placements; Escape returns to select. Hover state is in a store so the Konva handlers read
@@ -29,6 +29,7 @@ const handlers = {
 export function useOpeningTool(kind: OpeningKind | null, onExit: () => void) {
   const screen = useHover((s) => s.screen)
   useWalls() // re-render the ghost when walls change
+  useViewport()
   useEditorStore((s) => s.snapToGrid)
   useHeldKey('Shift')
 
@@ -65,7 +66,7 @@ export function useOpeningTool(kind: OpeningKind | null, onExit: () => void) {
         points={[...Object.values(toScreen(ghost.start)), ...Object.values(toScreen(ghost.end))]}
         stroke={GHOST_COLOR}
         opacity={0.5}
-        strokeWidth={ghost.thickness * PX_PER_INCH + 4}
+        strokeWidth={ghost.thickness * pxPerInch() + 4}
       />
     </Layer>
   )

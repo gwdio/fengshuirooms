@@ -1,4 +1,12 @@
-import { META_ID, metaCollection, wallCollection, type PlanMeta } from '@space-planner/core'
+import {
+  clampScale,
+  META_ID,
+  metaCollection,
+  wallCollection,
+  type PlanMeta,
+  type Viewport,
+} from '@space-planner/core'
+import { useViewport } from './editor/viewport.ts'
 import { registerCollection } from './doc/collections.ts'
 import './doc/history.ts' // starts recording the change stream
 import { initPersistence } from './persistence/engine.ts'
@@ -32,6 +40,20 @@ registerLocalSetting<ElementTool>({
     useEditorStore.subscribe((s, prev) => {
       if (s.lastElement !== prev.lastElement) onChange()
     }),
+})
+
+registerLocalSetting<Viewport>({
+  key: 'viewport',
+  parse: (raw) => {
+    if (typeof raw !== 'object' || raw === null) return undefined
+    const { scale, offset } = raw as { scale?: unknown; offset?: { x?: unknown; y?: unknown } }
+    const finite = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
+    if (!finite(scale) || !finite(offset?.x) || !finite(offset?.y)) return undefined
+    return { scale: clampScale(scale), offset: { x: offset.x, y: offset.y } }
+  },
+  get: () => useViewport.getState(),
+  set: (vp) => useViewport.setState(vp),
+  subscribe: (onChange) => useViewport.subscribe(onChange),
 })
 
 initPersistence({

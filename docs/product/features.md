@@ -80,7 +80,9 @@ Toggleable overlay. Full spec in [visibility.md](visibility.md).
 - Undo / redo (deep stack)
 - Multi-select (shift-click, drag-box), copy / paste
 - Keyboard nudging: arrows = 1 unit, shift+arrows = 10 units
-- Zoom and pan
+- Zoom (wheel or pinch toward the pointer, Ctrl+= / Ctrl+-, the zoom widget) and pan (hold Space and
+  drag, or middle-drag). 100% (Ctrl+0) and Fit (Shift+1) in the corner widget. The view is remembered
+  per browser.
 - Empty state with starter templates
 
 ## Persistence

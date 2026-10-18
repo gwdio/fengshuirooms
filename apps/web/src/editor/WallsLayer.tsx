@@ -10,7 +10,7 @@ import { pendingDeleteIds, previewWalls, setDrag, useEditDrag } from './drag.ts'
 import { LengthLabel } from './LengthLabel.tsx'
 import { snapSlide, snapWallTranslation } from './snapping.ts'
 import { setStageCursor } from './stageCursor.ts'
-import { PX_PER_INCH, toScreen } from './viewport.ts'
+import { pxPerInch, toScreen, useViewport } from './viewport.ts'
 
 const WALL_COLOR = '#374151'
 const OPENING_COLOR = '#475569'
@@ -18,11 +18,13 @@ const WINDOW_COLOR = '#0284c7'
 const SELECTED_COLOR = '#0f766e'
 const BACKGROUND = '#ffffff'
 
-// Every segment group's first child is a Line spanning start→end; browser tests read geometry
-// from it, and its `name` on the group is the segment kind.
+// Every segment group's first child is a Line spanning start→end, carrying the segment's world
+// coordinates as a `world` attr; browser tests read geometry from it (screen points depend on
+// zoom/pan), and the group's `name` is the segment kind.
 
 export function WallsLayer() {
   const drag = useEditDrag((s) => s.drag)
+  useViewport() // redraw on zoom/pan
   const walls = previewWalls(useWalls(), drag)
   const deleting = pendingDeleteIds(drag)
   const { units } = useMeta()
@@ -81,8 +83,9 @@ function WallShape({ wall, units, selected, deleting, onSelect }: ShapeProps) {
     <Group name={wall.kind} opacity={deleting ? 0.35 : 1}>
       <Line
         points={[a.x, a.y, b.x, b.y]}
+        world={worldAttr(wall)}
         stroke={deleting ? DELETE_COLOR : selected ? SELECTED_COLOR : WALL_COLOR}
-        strokeWidth={wall.thickness * PX_PER_INCH}
+        strokeWidth={wall.thickness * pxPerInch()}
         lineCap="round"
         {...interaction(wall, onSelect)}
       />
@@ -94,7 +97,7 @@ function WallShape({ wall, units, selected, deleting, onSelect }: ShapeProps) {
 function OpeningShape({ wall, units, selected, deleting, onSelect }: ShapeProps) {
   const a = toScreen(wall.start)
   const b = toScreen(wall.end)
-  const t = wall.thickness * PX_PER_INCH
+  const t = wall.thickness * pxPerInch()
   const len = Math.hypot(b.x - a.x, b.y - a.y)
   const d = { x: (b.x - a.x) / len, y: (b.y - a.y) / len }
   const n = { x: d.y, y: -d.x } // "left" of start→end on screen (y down)
@@ -113,6 +116,7 @@ function OpeningShape({ wall, units, selected, deleting, onSelect }: ShapeProps)
       {/* The gap in the wall; also the hit target. */}
       <Line
         points={[a.x, a.y, b.x, b.y]}
+        world={worldAttr(wall)}
         stroke={BACKGROUND}
         strokeWidth={t}
         lineCap="butt"
@@ -141,6 +145,10 @@ function OpeningShape({ wall, units, selected, deleting, onSelect }: ShapeProps)
       <LengthLabel a={a} b={b} text={formatLength(wallLength(wall), units)} color={color} />
     </Group>
   )
+}
+
+function worldAttr(w: Wall): number[] {
+  return [w.start.x, w.start.y, w.end.x, w.end.y]
 }
 
 /** Door leaf drawn open 90° from the hinge, plus the arc its free end sweeps. */
@@ -213,7 +221,7 @@ let pressScreen: Point | null = null
  */
 function interaction(wall: Wall, onSelect: (additive: boolean) => void) {
   return {
-    hitStrokeWidth: Math.max(wall.thickness * PX_PER_INCH, 12),
+    hitStrokeWidth: Math.max(wall.thickness * pxPerInch(), 12),
     draggable: true,
     dragDistance: 3,
     dragBoundFunc: () => ({ x: 0, y: 0 }),
