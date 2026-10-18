@@ -1,6 +1,7 @@
-import { wallEndpoints, wallsAtCorner, type Point } from '@space-planner/core'
+import { endpointsOf, wallsAtCorner, type Point } from '@space-planner/core'
 import { Circle, Layer } from 'react-konva'
-import { usePlanStore } from '../state/planStore.ts'
+import { useSelection } from '../state/selectionStore.ts'
+import { getWalls, moveCorner, useWalls } from '../walls/walls.ts'
 import { setDrag, useEditDrag } from './drag.ts'
 import { SnapMarker } from './SnapMarker.tsx'
 import { snapScreenPoint } from './snapping.ts'
@@ -15,12 +16,11 @@ const HANDLE_COLOR = '#0f766e'
  * from the rest. Selected walls' corners are drawn filled to show this.
  */
 export function CornerHandles() {
-  const plan = usePlanStore((s) => s.plan)
-  const selectedIds = usePlanStore((s) => s.selectedIds)
+  const walls = useWalls()
+  const selectedIds = useSelection((s) => s.selectedIds)
   const drag = useEditDrag((s) => s.drag)
   const selectedCorners = new Set(
-    plan.rooms
-      .flatMap((r) => r.walls)
+    walls
       .filter((w) => selectedIds.includes(w.id))
       .flatMap((w) => [w.start, w.end])
       .map(key),
@@ -28,7 +28,7 @@ export function CornerHandles() {
 
   return (
     <Layer>
-      {wallEndpoints(plan).map((corner) => (
+      {endpointsOf(walls).map((corner) => (
         <CornerHandle
           key={key(corner)}
           corner={corner}
@@ -53,8 +53,8 @@ function key(p: Point) {
 
 /** Walls a drag of `corner` should move: the selected ones there, else all of them. */
 function wallsToMove(corner: Point): string[] {
-  const { plan, selectedIds } = usePlanStore.getState()
-  const atCorner = wallsAtCorner(plan, corner)
+  const { selectedIds } = useSelection.getState()
+  const atCorner = wallsAtCorner(getWalls(), corner)
   const selected = atCorner.filter((id) => selectedIds.includes(id))
   return selected.length > 0 ? selected : atCorner
 }
@@ -87,13 +87,12 @@ function CornerHandle({ corner, detaches }: { corner: Point; detaches: boolean }
       onDragEnd={(e) => {
         // Konva moved this node during the drag. Put it back: if this corner still exists after
         // the commit (e.g. a detach left other walls here), React keeps the same node and won't
-        // reposition it, since its x/y props didn't change. Handle positions come from the plan only.
+        // reposition it, since its x/y props didn't change. Handle positions come from the document only.
         e.target.position(p)
         const drag = useEditDrag.getState().drag
         setDrag(null)
-        if (drag?.kind === 'corner' && drag.snap) {
-          usePlanStore.getState().moveCorner(drag.from, drag.snap.point, drag.wallIds)
-        }
+        if (drag?.kind === 'corner' && drag.snap)
+          moveCorner(drag.from, drag.snap.point, drag.wallIds)
         setStageCursor(e, 'default')
       }}
       onClick={(e) => {

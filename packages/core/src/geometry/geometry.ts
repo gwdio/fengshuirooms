@@ -1,4 +1,4 @@
-import type { Point } from '../model/plan.ts'
+import type { Point } from '../model/entities.ts'
 
 export function distance(a: Point, b: Point): number {
   return Math.hypot(b.x - a.x, b.y - a.y)

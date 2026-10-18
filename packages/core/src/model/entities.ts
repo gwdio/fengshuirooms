@@ -1,9 +1,9 @@
-// Serialized plan shape. See docs/architecture/data-model.md.
+// Entity types. A plan is a document of entity collections keyed by id (ADR-0011), not a nested
+// tree: each entity can be created, changed, or deleted independently, which is what persistence,
+// undo, and realtime sync all need. Only walls have a collection so far; the other types are the
+// intended shapes for features that haven't been built.
 //
-// All lengths are stored in inches (ADR-0008); `Plan.units` only controls display.
-// Bump SCHEMA_VERSION and add a migration whenever a persisted shape changes.
-
-export const SCHEMA_VERSION = 1
+// All lengths are inches (ADR-0008).
 
 export type Units = 'imperial' | 'metric'
 export type Layer = 'floor' | 'furniture' | 'elevated'
@@ -15,31 +15,11 @@ export interface Point {
   y: number
 }
 
-export interface Plan {
-  schemaVersion: number
-  id: string
-  name: string
-  units: Units
-  createdAt: number
-  updatedAt: number
-  rooms: Room[]
-  layouts: Layout[]
-  activeLayoutId: string
-  annotations: Annotation[]
-  background?: BackgroundImage
-}
-
-export interface Room {
-  id: string
-  /**
-   * Straight segments in no particular order; rooms need not be closed. Connected walls share
-   * exact endpoint coordinates (the wall tool snaps to existing endpoints). Walls are never curved.
-   */
-  walls: Wall[]
-  features: WallFeature[]
-  fixedItems: FixedItem[]
-}
-
+/**
+ * A straight wall segment, never curved. Connected walls share exact endpoint coordinates, and
+ * walls are kept normalized (ADR-0010): no endpoint lies inside another wall, and no two inline
+ * walls meet at an otherwise bare corner.
+ */
 export interface Wall {
   id: string
   start: Point
@@ -72,12 +52,11 @@ export interface FixedItem {
 export interface Layout {
   id: string
   name: string
-  items: PlacedItem[]
-  clearances: Clearance[]
 }
 
 export interface PlacedItem {
   id: string
+  layoutId: string
   catalogId?: string
   shape: ItemShape
   /** Center of the item. */

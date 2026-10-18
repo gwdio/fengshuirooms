@@ -6,7 +6,8 @@ import { create } from 'zustand'
 import { PRIORITY } from '../input/keyboard.ts'
 import { useHeldKey, useKeyBindings } from '../input/useKeyboard.ts'
 import { useEditorStore } from '../state/editorStore.ts'
-import { usePlanStore } from '../state/planStore.ts'
+import { useMeta } from '../doc/meta.ts'
+import { addWall, removeWalls, useWalls } from '../walls/walls.ts'
 import { PreviewSegment } from './PreviewSegment.tsx'
 import { SnapMarker } from './SnapMarker.tsx'
 import { snapScreenPoint } from './snapping.ts'
@@ -63,7 +64,7 @@ function commitClick(p: Point) {
   }
   const prev = chain.points.at(-2)
   if (prev && pointsEqual(p, prev)) return // would retrace the wall just drawn
-  const id = usePlanStore.getState().addWall(last, p)
+  const id = addWall(last, p)
   if (!id) return
   const closes = pointsEqual(p, chain.points[0]!)
   setPen({
@@ -72,7 +73,7 @@ function commitClick(p: Point) {
 }
 
 function commitDrag(start: Point, end: Point) {
-  const id = usePlanStore.getState().addWall(start, end)
+  const id = addWall(start, end)
   if (!id) return
   const { chain } = usePen.getState()
   const continues = chain && pointsEqual(start, chain.points.at(-1)!)
@@ -91,7 +92,7 @@ function undoLastChainWall() {
     setPen({ chain: null })
     return
   }
-  usePlanStore.getState().removeWalls([lastId])
+  removeWalls([lastId])
   setPen({ chain: { points: chain.points.slice(0, -1), wallIds: chain.wallIds.slice(0, -1) } })
 }
 
@@ -131,7 +132,8 @@ const handlers = {
  */
 export function useWallPen(active: boolean, onExit: () => void) {
   const { chain, press, hover } = usePen()
-  const plan = usePlanStore((s) => s.plan)
+  const { units } = useMeta()
+  useWalls() // re-snap the cursor when walls change
   // Subscribed only so the cursor re-snaps when these change; resolve() reads them directly.
   useEditorStore((s) => s.snapToGrid)
   useHeldKey('Shift')
@@ -174,7 +176,7 @@ export function useWallPen(active: boolean, onExit: () => void) {
   const preview = active && (
     <Layer listening={false}>
       {from && cursor && !pointsEqual(from, cursor.point) && (
-        <PreviewSegment from={from} to={cursor.point} units={plan.units} color={PEN_COLOR} />
+        <PreviewSegment from={from} to={cursor.point} units={units} color={PEN_COLOR} />
       )}
       {cursor && <SnapMarker snap={cursor} color={PEN_COLOR} />}
     </Layer>

@@ -43,6 +43,10 @@ Client A ◀──ack───────────────────�
 
 ## Data integrity
 
+> Since ADR-0011 the client already speaks the sync vocabulary: an `edit` payload is a change batch
+> (`{ collection, id, value | null }[]`). The server validates each entity with the same
+> `CollectionSpec.parse` and applies last-write-wins per entity.
+
 - DynamoDB is the source of truth
 - Patches validated server-side (size, schema)
 - Conflict resolution: last-write-wins per `PlacedItem.id` (CRDT is overkill for 2–3 people;

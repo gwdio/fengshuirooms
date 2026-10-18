@@ -16,8 +16,15 @@ declare global {
 
 export interface App {
   page: Page
-  /** Reloads the app with an empty plan. */
+  /** Opens the app with empty storage and an empty plan. */
   reset(): Promise<void>
+  /** Reloads the page, keeping storage. */
+  reload(): Promise<void>
+  /** Reads a `space-planner:`-prefixed localStorage key. */
+  storage(key: string): Promise<string | null>
+  setStorage(key: string, value: string): Promise<void>
+  /** Text of the notice bar, or null if none is shown. */
+  notice(): Promise<string | null>
   click(x: number, y: number): Promise<void>
   /** Press at (x1,y1), move in steps, release at (x2,y2). */
   drag(x1: number, y1: number, x2: number, y2: number): Promise<void>
@@ -67,14 +74,32 @@ export function useApp(): App {
     origin.y + y * PX_PER_INCH,
   ]
 
-  app.reset = async () => {
-    await app.page.goto(baseUrl, { waitUntil: 'load' })
+  async function open() {
     await app.page.waitForFunction(() => window.Konva?.stages[0]?.width() > 0)
     origin = await app.page.evaluate(() => {
       const r = window.Konva.stages[0]!.container().getBoundingClientRect()
       return { x: r.x, y: r.y }
     })
   }
+  app.reset = async () => {
+    await app.page.goto(baseUrl, { waitUntil: 'load' })
+    await app.page.evaluate(() => localStorage.clear())
+    await app.page.goto(baseUrl, { waitUntil: 'load' })
+    await open()
+  }
+  app.reload = async () => {
+    await app.page.reload({ waitUntil: 'load' })
+    await open()
+  }
+  app.storage = async (key) =>
+    app.page.evaluate((k) => localStorage.getItem(`space-planner:${k}`), key)
+  app.setStorage = async (key, value) =>
+    app.page.evaluate(([k, v]) => localStorage.setItem(`space-planner:${k}`, v), [
+      key,
+      value,
+    ] as const)
+  app.notice = async () =>
+    app.page.evaluate(() => document.querySelector('[role="alert"]')?.textContent ?? null)
   app.click = async (x, y) => app.page.mouse.click(...screen(x, y))
   app.drag = async (x1, y1, x2, y2) => {
     await app.page.mouse.move(...screen(x1, y1))

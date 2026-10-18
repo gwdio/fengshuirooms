@@ -1,17 +1,12 @@
-import {
-  allWalls,
-  formatLength,
-  wallLength,
-  type Point,
-  type Units,
-  type Wall,
-} from '@space-planner/core'
+import { formatLength, wallLength, type Point, type Units, type Wall } from '@space-planner/core'
 import { Group, Layer, Line } from 'react-konva'
-import { previewPlan, setDrag, useEditDrag } from './drag.ts'
+import { previewWalls, setDrag, useEditDrag } from './drag.ts'
 import { snapWallTranslation } from './snapping.ts'
 import { setStageCursor } from './stageCursor.ts'
 import { LengthLabel } from './LengthLabel.tsx'
-import { usePlanStore } from '../state/planStore.ts'
+import { useMeta } from '../doc/meta.ts'
+import { useSelection } from '../state/selectionStore.ts'
+import { translateWalls, useWalls } from '../walls/walls.ts'
 import { useEditorStore } from '../state/editorStore.ts'
 import { PX_PER_INCH, toScreen } from './viewport.ts'
 
@@ -19,21 +14,22 @@ const WALL_COLOR = '#374151'
 const SELECTED_COLOR = '#0f766e'
 
 export function WallsLayer() {
-  const plan = previewPlan(
-    usePlanStore((s) => s.plan),
+  const walls = previewWalls(
+    useWalls(),
     useEditDrag((s) => s.drag),
   )
-  const selectedIds = usePlanStore((s) => s.selectedIds)
-  const select = usePlanStore((s) => s.select)
+  const { units } = useMeta()
+  const selectedIds = useSelection((s) => s.selectedIds)
+  const select = useSelection((s) => s.select)
   const selectable = useEditorStore((s) => s.tool === 'select')
 
   return (
     <Layer listening={selectable}>
-      {allWalls(plan).map((wall) => (
+      {walls.map((wall) => (
         <WallShape
           key={wall.id}
           wall={wall}
-          units={plan.units}
+          units={units}
           selected={selectedIds.includes(wall.id)}
           onSelect={(additive) =>
             select(
@@ -75,7 +71,7 @@ function WallShape(props: {
           onSelect(e.evt.shiftKey)
         }}
         // Dragging moves the selected walls only, detaching them from their neighbours. The node
-        // itself stays put (dragBoundFunc); the preview plan re-renders the walls in place.
+        // itself stays put (dragBoundFunc); the preview re-renders the walls in place.
         draggable
         dragDistance={3}
         dragBoundFunc={() => ({ x: 0, y: 0 })}
@@ -87,7 +83,7 @@ function WallShape(props: {
           // later), or the wall would trail the pointer.
           const start = pressScreen ?? e.target.getStage()?.getPointerPosition()
           if (!start) return
-          const { selectedIds, select } = usePlanStore.getState()
+          const { selectedIds, select } = useSelection.getState()
           let ids = selectedIds
           if (!ids.includes(wall.id)) {
             ids = e.evt.shiftKey ? [...ids, wall.id] : [wall.id]
@@ -105,7 +101,7 @@ function WallShape(props: {
           const drag = useEditDrag.getState().drag
           setDrag(null)
           if (drag?.kind === 'walls' && drag.snap) {
-            usePlanStore.getState().translateWalls(drag.ids, drag.snap.delta)
+            translateWalls(drag.ids, drag.snap.delta)
           }
           setStageCursor(e, 'default')
         }}

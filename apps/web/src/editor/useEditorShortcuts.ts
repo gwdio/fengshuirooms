@@ -1,6 +1,7 @@
 import { useKeyBindings } from '../input/useKeyboard.ts'
 import { useEditorStore } from '../state/editorStore.ts'
-import { usePlanStore } from '../state/planStore.ts'
+import { useSelection } from '../state/selectionStore.ts'
+import { removeWalls } from '../walls/walls.ts'
 
 /** App-wide editor shortcuts. Tool-specific keys are registered by the tool itself. */
 export function useEditorShortcuts() {
@@ -25,17 +26,16 @@ export function useEditorShortcuts() {
       description: 'Delete selection',
       when: () =>
         useEditorStore.getState().tool === 'select' &&
-        usePlanStore.getState().selectedIds.length > 0,
+        useSelection.getState().selectedIds.length > 0,
       run: () => {
-        const { selectedIds, removeWalls } = usePlanStore.getState()
-        removeWalls(selectedIds)
+        removeWalls(useSelection.getState().selectedIds)
       },
     },
     {
       keys: ['Escape'],
       description: 'Clear selection',
-      when: () => usePlanStore.getState().selectedIds.length > 0,
-      run: () => usePlanStore.getState().select([]),
+      when: () => useSelection.getState().selectedIds.length > 0,
+      run: () => useSelection.getState().select([]),
     },
   ])
 }

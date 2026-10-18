@@ -1,19 +1,17 @@
 import {
-  allWalls,
   endpointsOf,
   snapTranslation,
   snapWallPoint,
-  type Plan,
   type Point,
   type SnapResult,
   type TranslationSnap,
 } from '@space-planner/core'
 import { keyboard } from '../input/useKeyboard.ts'
 import { useEditorStore } from '../state/editorStore.ts'
-import { usePlanStore } from '../state/planStore.ts'
+import { getWalls } from '../walls/walls.ts'
 import { GRID_INCHES, screenToWorldDistance, toWorld } from './viewport.ts'
 
-// Snapping for wall editing. Reads the live plan, grid setting, and Shift state from stores, so
+// Snapping for wall editing. Reads the live walls, grid setting, and Shift state from stores, so
 // these are safe to call from Konva event handlers.
 
 const SNAP_RADIUS_PX = 10
@@ -23,16 +21,16 @@ function gridStep(): number | undefined {
 }
 
 /** Walls that stay put while `movingWallIds` move; only these are snap targets. */
-function fixedWalls(plan: Plan, movingWallIds: string[] = []) {
+function fixedWalls(movingWallIds: readonly string[] = []) {
   const moving = new Set(movingWallIds)
-  return allWalls(plan).filter((w) => !moving.has(w.id))
+  return getWalls().filter((w) => !moving.has(w.id))
 }
 
 export function snapScreenPoint(
   screen: Point,
-  opts: { movingWallIds?: string[]; extraEndpoints?: Point[] } = {},
+  opts: { movingWallIds?: readonly string[]; extraEndpoints?: Point[] } = {},
 ): SnapResult {
-  const walls = fixedWalls(usePlanStore.getState().plan, opts.movingWallIds)
+  const walls = fixedWalls(opts.movingWallIds)
   return snapWallPoint(toWorld(screen), {
     endpoints: [...endpointsOf(walls), ...(opts.extraEndpoints ?? [])],
     walls,
@@ -44,13 +42,12 @@ export function snapScreenPoint(
 
 /** Snaps the delta for dragging whole walls from `startScreen` to `screen`. */
 export function snapWallTranslation(
-  movingWallIds: string[],
+  movingWallIds: readonly string[],
   startScreen: Point,
   screen: Point,
 ): TranslationSnap {
-  const plan = usePlanStore.getState().plan
   const moving = new Set(movingWallIds)
-  const movingPoints = allWalls(plan)
+  const movingPoints = getWalls()
     .filter((w) => moving.has(w.id))
     .flatMap((w) => [w.start, w.end])
   const a = toWorld(startScreen)
@@ -59,7 +56,7 @@ export function snapWallTranslation(
     movingPoints,
     { x: b.x - a.x, y: b.y - a.y },
     {
-      endpoints: endpointsOf(fixedWalls(plan, movingWallIds)),
+      endpoints: endpointsOf(fixedWalls(movingWallIds)),
       radius: screenToWorldDistance(SNAP_RADIUS_PX),
       grid: gridStep(),
       precision: 1,

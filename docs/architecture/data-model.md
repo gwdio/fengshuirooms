@@ -1,24 +1,25 @@
 # Data model
 
-## Plan (client-side, serialized)
+## Plan document (client-side)
 
-Source of truth: [`packages/core/src/model/plan.ts`](../../packages/core/src/model/plan.ts). This doc
-explains intent; the code wins if they disagree.
+A plan is a **document of entity collections** keyed by id, not a nested tree
+([ADR-0011](../decisions/0011-plan-as-entity-document.md)). Generic machinery lives in
+[`packages/core/src/doc/`](../../packages/core/src/doc/), and entity types in
+[`packages/core/src/model/entities.ts`](../../packages/core/src/model/entities.ts). The code wins if it
+and this doc disagree.
 
-```
-Plan
-├── schemaVersion, id, name, units, createdAt, updatedAt
-├── rooms[]            usually 1 in V1
-│   ├── walls[]        straight segments; need not form a closed polygon
-│   ├── features[]     doors/windows, positioned 0–1 along a wall
-│   └── fixedItems[]   outlets, vents, radiators, closets
-├── layouts[]          alternative furniture arrangements of the same room(s)
-│   ├── items[]        PlacedItem: shape, center position, w/h, rotation, layer, tall
-│   └── clearances[]   attached to an item; auto or user-drawn
-├── activeLayoutId
-├── annotations[]      sticky notes
-└── background?        traced floorplan image + scale calibration
-```
+| Collection    | Entity      | Status                                               |
+| ------------- | ----------- | ---------------------------------------------------- |
+| `meta`        | `PlanMeta`  | Live. A single entity `plan`: name, units, createdAt |
+| `walls`       | `Wall`      | Live. Straight segments                              |
+| `features`    | WallFeature | Planned: doors/windows, referencing `wallId`         |
+| `layouts`     | Layout      | Planned: named furniture arrangements                |
+| `items`       | PlacedItem  | Planned: furniture, referencing `layoutId`           |
+| `clearances`  | Clearance   | Planned: referencing `itemId`                        |
+| `annotations` | Annotation  | Planned                                              |
+
+Changes are batches of `{ collection, id, value | null }` with an origin (`local`, `load`, `remote`,
+`undo`). Per-browser state (selection, tool, grid snap) is not in the document.
 
 ### Invariants
 
@@ -27,12 +28,27 @@ Plan
   `rotation` is degrees clockwise.
 - **Walls** are straight segments, never curved. Connected walls share exact endpoint coordinates
   (the pen snaps to existing endpoints and rounds to 1"), so "same corner" means equal `x`/`y`.
-  Walls are normalized after every edit: no endpoint lies strictly inside another wall (it gets
-  split there), and no two inline walls meet at an otherwise bare corner (they get merged). There is no separate corner/vertex entity yet ([ADR-0010](../decisions/0010-walls-as-segments.md)).
-- **IDs** are `crypto.randomUUID()` strings, never array indices — collab merges by id.
-- **Versioning**: any change to a persisted shape bumps `SCHEMA_VERSION` and adds a migration
-  `vN → vN+1` in `packages/core`. Plans in localStorage and old share links must keep loading.
-- Rooms and layouts are deliberately separate: walls are shared across layouts; furniture is per layout.
+  Local edits are normalized before commit: no endpoint lies strictly inside another wall (it gets
+  split there), and no two inline walls meet at an otherwise bare corner (they get merged). There is
+  no separate corner/vertex entity ([ADR-0010](../decisions/0010-walls-as-segments.md)).
+- **IDs** are `crypto.randomUUID()` strings. Entities refer to each other by id, and **a reference may
+  dangle** (a peer deleted the target). Readers must cope.
+- **Unchanged entities keep their object identity** through edits. Change detection diffs by reference,
+  so a function that copies untouched entities would report them all as changed.
+- **Versioning is per collection.** Changing an entity's stored shape means bumping that
+  `CollectionSpec.version` and adding a `migrations[oldVersion]` step. Never edit an existing step.
+
+## Stored form (browser)
+
+`writeSnapshot`/`readSnapshot` in core:
+
+```json
+{ "format": 1, "collections": { "walls": { "version": 1, "entities": [ ... ] }, "meta": { ... } } }
+```
+
+Reading drops invalid entities individually, keeps unknown or newer collections verbatim (and writes
+them back), and throws only if the data isn't a snapshot at all. localStorage keys are documented in
+[`apps/web/src/persistence/docStorage.ts`](../../apps/web/src/persistence/docStorage.ts).
 
 ## Catalog (static, bundled)
 
@@ -42,6 +58,9 @@ default dimensions, `frontFace`, and `autoClearances` templates. A `PlacedItem` 
 drop time and keeps `catalogId` as a reference — editing the catalog never mutates saved plans.
 
 ## Backend storage (V2)
+
+> Written before ADR-0011. The `DATA` blob would hold a snapshot as above, and realtime edits are
+> change batches. Revisit the key design in Phase 5.
 
 Single DynamoDB table, single-table design:
 

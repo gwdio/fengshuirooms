@@ -32,7 +32,13 @@ Prefer the simplest thing that works, and don't add tooling, abstractions, or co
   goes in `packages/core` with Vitest tests. `apps/web` is rendering and interaction.
 - All stored lengths are inches ([ADR-0008](docs/decisions/0008-canonical-unit-inches.md)). Never
   store display units.
-- If you change a persisted shape in `packages/core/src/model/plan.ts`, bump `SCHEMA_VERSION` and add a migration.
+- Document data lives in entity collections ([ADR-0011](docs/decisions/0011-plan-as-entity-document.md)).
+  A feature that stores data registers a `CollectionSpec` (or a `LocalSetting` for per-browser prefs)
+  in `apps/web/src/boot.ts`, writes through `commitCollection`, and reacts to `onChanges`. Never
+  call persistence directly. Changing an entity's stored shape means bumping its collection
+  `version` and adding a migration.
+- Assume any entity can change or vanish at any time (later: other people). Code holding ids across
+  renders must listen to `onChanges` or treat a missing id as a no-op.
 - Record non-obvious, hard-to-reverse choices as ADRs (`docs/decisions/template.md`) and add them to the index.
 - Shortcuts go through the keyboard engine (`apps/web/src/input/`), never raw `keydown` listeners.
 - Konva/canvas event handlers read state via `getState()`, never render closures

@@ -1,4 +1,4 @@
-import type { Units } from '../model/plan.ts'
+import type { Units } from '../model/entities.ts'
 
 export const CM_PER_INCH = 2.54
 

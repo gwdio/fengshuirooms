@@ -4,22 +4,44 @@
 
 ## Modules
 
-Planned layout under `apps/web/src/`. Create directories as work lands; don't scaffold empty ones.
+Layout under `apps/web/src/`. Create directories as work lands; don't scaffold empty ones.
 
-| Module          | Responsibility                                                                                                                     |
-| --------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `editor/`       | Konva stage, scenegraph rendering, hit-testing, selection, transform handles, zoom/pan                                             |
-| `editor/tools/` | Mode-based interaction: select, draw-walls, place-feature, add-clearance. One active tool at a time.                               |
-| `panels/`       | Catalog (search, categories, drag-to-canvas, recents/favorites), properties (dims, rotation, layer, color, label, per-type config) |
-| `state/`        | Zustand stores. Plan mutations go through store actions so undo/redo and sync can intercept them.                                  |
-| `persistence/`  | localStorage CRUD, URL-hash encode/decode (gzip via `CompressionStream` + base64url), cloud adapter (V2)                           |
-| `overlays/`     | Clearances, visibility view (consumes `packages/core` visibility output)                                                           |
-| `collab/` (V2)  | WebSocket client, optimistic updates, presence cursors                                                                             |
+| Module         | Responsibility                                                                                |
+| -------------- | --------------------------------------------------------------------------------------------- |
+| `boot.ts`      | Startup: registers document collections and local settings, starts persistence                |
+| `doc/`         | The open document: store, change stream (`onChanges`), collection registry, plan meta         |
+| `walls/`       | The walls feature's reads (`useWalls`) and edits (normalize, then `commitCollection`)         |
+| `persistence/` | Generic engine: restores and saves registered collections and settings from the change stream |
+| `input/`       | Keyboard engine (below). `keyboard.ts` is DOM-free and unit-tested                            |
+| `editor/`      | Konva stage, rendering, tools (wall pen), handles, drags, snapping glue                       |
+| `state/`       | Non-document UI stores: tool and grid snap, selection, notices                                |
+| `panels/`      | Side panels, notice bar                                                                       |
+| `overlays/`    | Planned: clearances, visibility view                                                          |
+| `collab/`      | Planned (V2): WebSocket sync as another change-stream consumer                                |
 
-`input/` holds the keyboard engine (below). `input/keyboard.ts` is DOM-free and unit-tested.
-
-Pure logic — snapping math, wall polygon ops, visibility, serialization, migrations — lives in
+Pure logic (geometry, snapping, normalization, the document model, snapshots, migrations) lives in
 `packages/core`, not here.
+
+## Document and change stream
+
+See [ADR-0011](../decisions/0011-plan-as-entity-document.md) and [data-model.md](data-model.md).
+
+- **Read** with collection hooks (`useWalls()`, `useMeta()`, or generic `useCollection(name)`); in
+  handlers use the `get…()` equivalents.
+- **Write** only through `commitCollection(name, next)`, which diffs and emits a batch. Feature
+  modules wrap it (`walls/walls.ts`) so feature rules like normalization run first.
+- **React** to changes with `onChanges(batch => …)`. Check `batch.origin`: e.g. persistence skips
+  `load`, and drags cancel on non-`local` changes to what they hold.
+- **Plug in a new feature's data** by registering its `CollectionSpec` in `boot.ts`. Persistence (and
+  later sync) picks it up with no further code. Per-browser preferences use `registerLocalSetting`.
+
+## Persistence
+
+`persistence/engine.ts`. On start it restores local settings and the last document (via core's
+forgiving snapshot reader), then saves after every non-`load` batch: debounced, and flushed on
+`pagehide`/hidden. Problems go to the notice bar: a damaged entity is dropped (the original save is
+backed up first), an unreadable document is left untouched while a fresh one starts, and a failed save
+(e.g. storage full) shows a notice until saving works again.
 
 ## Keyboard
 
@@ -44,7 +66,7 @@ render closure.** Interactive tool state (e.g. the wall pen's chain and press) l
 store for this reason, and render code subscribes to it.
 
 Drags that change the plan (e.g. corner drags) keep their in-progress state in a store and render a
-preview plan (`previewPlan` in `editor/cornerDrag.ts`), committing to the plan store once on drop.
+preview (`previewWalls` in `editor/drag.ts`), committing once on drop.
 Preview and commit use the same core function, so what you see is what you get.
 
 Draggable Konva nodes whose position comes from props must be put back on drag end

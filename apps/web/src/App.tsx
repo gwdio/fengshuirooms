@@ -3,12 +3,12 @@ import { Toolbar } from './editor/Toolbar.tsx'
 import { useEditorShortcuts } from './editor/useEditorShortcuts.ts'
 import { useKeyboardRoot } from './input/useKeyboard.ts'
 import { CatalogPanel } from './panels/CatalogPanel.tsx'
+import { NoticeBar } from './panels/NoticeBar.tsx'
 import { PropertiesPanel } from './panels/PropertiesPanel.tsx'
-import { usePlanStore } from './state/planStore.ts'
+import { setUnits, useMeta } from './doc/meta.ts'
 
 export default function App() {
-  const units = usePlanStore((s) => s.plan.units)
-  const setUnits = usePlanStore((s) => s.setUnits)
+  const { units } = useMeta()
   useKeyboardRoot()
   useEditorShortcuts()
 
@@ -21,12 +21,14 @@ export default function App() {
         </div>
         <button
           type="button"
+          title="Units"
           className="shrink-0 rounded border border-gray-300 px-2 py-1 text-sm hover:bg-gray-100"
           onClick={() => setUnits(units === 'imperial' ? 'metric' : 'imperial')}
         >
           {units === 'imperial' ? 'ft / in' : 'm / cm'}
         </button>
       </header>
+      <NoticeBar />
       <main className="flex min-h-0 flex-1">
         <CatalogPanel />
         <div className="min-w-0 flex-1">

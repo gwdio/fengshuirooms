@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Layer, Line, Stage } from 'react-konva'
 import { useEditorStore } from '../state/editorStore.ts'
-import { usePlanStore } from '../state/planStore.ts'
+import { useSelection } from '../state/selectionStore.ts'
 import { CornerHandles } from './CornerHandles.tsx'
 import { useWallPen } from './useWallPen.tsx'
 import { WallsLayer } from './WallsLayer.tsx'
@@ -12,7 +12,7 @@ export function EditorCanvas() {
   const [size, setSize] = useState({ width: 0, height: 0 })
   const tool = useEditorStore((s) => s.tool)
   const setTool = useEditorStore((s) => s.setTool)
-  const select = usePlanStore((s) => s.select)
+  const select = useSelection((s) => s.select)
   const pen = useWallPen(tool === 'wall', () => setTool('select'))
 
   useEffect(() => {

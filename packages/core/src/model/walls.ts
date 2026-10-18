@@ -1,22 +1,23 @@
 import { closestPointOnSegment, distance, pointsEqual } from '../geometry/geometry.ts'
-import { newId } from './create.ts'
-import type { Plan, Point, Room, Wall } from './plan.ts'
+import { newId } from './ids.ts'
+import {
+  isFiniteNumber,
+  isObject,
+  isPoint,
+  isString,
+  type CollectionSpec,
+} from '../doc/collection.ts'
+import type { Point, Wall } from './entities.ts'
+
+// Wall geometry operations. All functions are pure: they take a wall list and return a new one
+// (or the same array when nothing changed). Order is preserved where it matters (merge keeps the
+// earlier wall's id).
 
 /** Typical interior wall, in inches. */
 export const DEFAULT_WALL_THICKNESS = 4.5
 
-/** All walls in the plan, across rooms. */
-export function allWalls(plan: Plan): Wall[] {
-  return plan.rooms.flatMap((r) => r.walls)
-}
-
-/** Distinct wall endpoints (corners), for snapping. */
-export function wallEndpoints(plan: Plan): Point[] {
-  return endpointsOf(allWalls(plan))
-}
-
-/** Distinct endpoints of the given walls. */
-export function endpointsOf(walls: Wall[]): Point[] {
+/** Distinct endpoints (corners) of the given walls. */
+export function endpointsOf(walls: readonly Wall[]): Point[] {
   const seen = new Set<string>()
   const out: Point[] = []
   for (const w of walls) {
@@ -35,76 +36,68 @@ export function wallLength(w: Wall): number {
   return distance(w.start, w.end)
 }
 
-/**
- * Adds a straight wall to the plan's first room, creating the room if needed.
- * Zero-length walls are ignored. Returns a new plan; the input is not mutated.
- */
-export function addWall(
-  plan: Plan,
+/** A new wall, or undefined if it would be zero-length. */
+export function createWall(
   start: Point,
   end: Point,
   thickness = DEFAULT_WALL_THICKNESS,
-): { plan: Plan; wall?: Wall } {
-  if (distance(start, end) === 0) return { plan }
-  const wall: Wall = { id: newId(), start: { ...start }, end: { ...end }, thickness }
-  const [first, ...rest] = plan.rooms
-  const room: Room = first
-    ? { ...first, walls: [...first.walls, wall] }
-    : { id: newId(), walls: [wall], features: [], fixedItems: [] }
-  return { plan: { ...plan, rooms: [room, ...rest], updatedAt: Date.now() }, wall }
+): Wall | undefined {
+  if (distance(start, end) === 0) return undefined
+  return { id: newId(), start: { ...start }, end: { ...end }, thickness }
 }
 
-/** Removes walls by id from every room. Returns a new plan. */
-export function removeWalls(plan: Plan, ids: string[]): Plan {
+export function removeWalls(walls: readonly Wall[], ids: readonly string[]): Wall[] {
   const drop = new Set(ids)
-  return {
-    ...plan,
-    rooms: plan.rooms.map((r) => ({ ...r, walls: r.walls.filter((w) => !drop.has(w.id)) })),
-    updatedAt: Date.now(),
-  }
+  return walls.filter((w) => !drop.has(w.id))
 }
 
 /** Ids of walls with an endpoint exactly at `corner`. */
-export function wallsAtCorner(plan: Plan, corner: Point): string[] {
-  return allWalls(plan)
+export function wallsAtCorner(walls: readonly Wall[], corner: Point): string[] {
+  return walls
     .filter((w) => pointsEqual(w.start, corner) || pointsEqual(w.end, corner))
     .map((w) => w.id)
 }
 
 /**
- * Moves a corner: every wall endpoint exactly at `from` goes to `to` — or, with `onlyWallIds`, just
- * those walls' endpoints, detaching them from the rest. Walls that collapse to zero length are
- * removed. Dropping onto another corner merges the two. Returns a new plan.
+ * Moves a corner: every wall endpoint exactly at `from` goes to `to`. With `onlyWallIds`, just
+ * those walls' endpoints move, detaching them from the rest. Walls that collapse to zero length
+ * are removed. Dropping onto another corner merges the two.
  */
-export function moveCorner(plan: Plan, from: Point, to: Point, onlyWallIds?: string[]): Plan {
-  if (pointsEqual(from, to)) return plan
+export function moveCorner(
+  walls: readonly Wall[],
+  from: Point,
+  to: Point,
+  onlyWallIds?: readonly string[],
+): readonly Wall[] {
+  if (pointsEqual(from, to)) return walls
   const only = onlyWallIds && new Set(onlyWallIds)
   const move = (p: Point) => (pointsEqual(p, from) ? { ...to } : p)
-  return mapWalls(plan, (w) =>
-    only && !only.has(w.id) ? w : { ...w, start: move(w.start), end: move(w.end) },
+  return dropCollapsed(
+    walls.map((w) => {
+      if (only && !only.has(w.id)) return w
+      // Untouched walls must stay the same objects: change detection diffs by reference.
+      if (!pointsEqual(w.start, from) && !pointsEqual(w.end, from)) return w
+      return { ...w, start: move(w.start), end: move(w.end) }
+    }),
   )
 }
 
 /** Moves the given walls by `delta`. Their shared corners with other walls are left behind. */
-export function translateWalls(plan: Plan, ids: string[], delta: Point): Plan {
-  if (delta.x === 0 && delta.y === 0) return plan
+export function translateWalls(
+  walls: readonly Wall[],
+  ids: readonly string[],
+  delta: Point,
+): readonly Wall[] {
+  if (delta.x === 0 && delta.y === 0) return walls
   const move = new Set(ids)
   const shift = (p: Point) => ({ x: p.x + delta.x, y: p.y + delta.y })
-  return mapWalls(plan, (w) =>
-    move.has(w.id) ? { ...w, start: shift(w.start), end: shift(w.end) } : w,
+  return dropCollapsed(
+    walls.map((w) => (move.has(w.id) ? { ...w, start: shift(w.start), end: shift(w.end) } : w)),
   )
 }
 
-/** Applies `fn` to every wall, dropping any that end up zero-length. */
-function mapWalls(plan: Plan, fn: (w: Wall) => Wall): Plan {
-  return {
-    ...plan,
-    rooms: plan.rooms.map((r) => ({
-      ...r,
-      walls: r.walls.map(fn).filter((w) => !pointsEqual(w.start, w.end)),
-    })),
-    updatedAt: Date.now(),
-  }
+function dropCollapsed(walls: Wall[]): Wall[] {
+  return walls.filter((w) => !pointsEqual(w.start, w.end))
 }
 
 /** How close (inches) a corner must be to a wall's line to count as touching it. */
@@ -112,63 +105,60 @@ const JUNCTION_EPSILON = 1e-6
 
 /**
  * Splits any wall that has another wall's endpoint lying strictly inside it, so every junction is
- * an ordinary shared corner (ADR-0010). The first piece keeps the original id. Run after every wall
- * edit; returns the same plan object if nothing needed splitting.
+ * an ordinary shared corner (ADR-0010). The first piece keeps the original id.
  */
-export function splitWallsAtJunctions(plan: Plan): Plan {
-  const corners = wallEndpoints(plan)
+export function splitWallsAtJunctions(walls: readonly Wall[]): readonly Wall[] {
+  const corners = endpointsOf(walls)
   let changed = false
-  const rooms = plan.rooms.map((room) => {
-    const walls = room.walls.flatMap((w) => {
-      const cuts = corners
-        .filter(
-          (p) =>
-            distance(p, w.start) > JUNCTION_EPSILON &&
-            distance(p, w.end) > JUNCTION_EPSILON &&
-            distance(p, closestPointOnSegment(p, w.start, w.end).point) <= JUNCTION_EPSILON,
-        )
-        .sort((p, q) => distance(w.start, p) - distance(w.start, q))
-      if (cuts.length === 0) return [w]
-      changed = true
-      const stops = [w.start, ...cuts, w.end]
-      return stops.slice(1).map((end, i) => ({
-        ...w,
-        id: i === 0 ? w.id : newId(),
-        start: { ...stops[i]! },
-        end: { ...end },
-      }))
-    })
-    return { ...room, walls }
+  const out = walls.flatMap((w) => {
+    const cuts = corners
+      .filter(
+        (p) =>
+          distance(p, w.start) > JUNCTION_EPSILON &&
+          distance(p, w.end) > JUNCTION_EPSILON &&
+          distance(p, closestPointOnSegment(p, w.start, w.end).point) <= JUNCTION_EPSILON,
+      )
+      .sort((p, q) => distance(w.start, p) - distance(w.start, q))
+    if (cuts.length === 0) return [w]
+    changed = true
+    const stops = [w.start, ...cuts, w.end]
+    return stops.slice(1).map((end, i) => ({
+      ...w,
+      id: i === 0 ? w.id : newId(),
+      start: { ...stops[i]! },
+      end: { ...end },
+    }))
   })
-  return changed ? { ...plan, rooms, updatedAt: Date.now() } : plan
+  return changed ? out : walls
 }
 
 /**
  * Joins pairs of walls that meet end-to-end in a straight line at a corner no other wall touches,
  * repeating until none are left. Walls with different thicknesses are left alone. The surviving
- * wall keeps the id of whichever came first in the room; `replaced` maps each removed id to it.
+ * wall keeps the id of whichever came first; `replaced` maps each removed id to it.
  */
-export function mergeCollinearWalls(plan: Plan): { plan: Plan; replaced: Map<string, string> } {
+export function mergeCollinearWalls(walls: readonly Wall[]): {
+  walls: readonly Wall[]
+  replaced: Map<string, string>
+} {
   const replaced = new Map<string, string>()
-  const rooms = plan.rooms.map((room) => {
-    let walls = room.walls
-    for (;;) {
-      const merge = findMergeablePair(walls)
-      if (!merge) break
-      const { keep, drop, corner } = merge
-      const far = (w: Wall) => (pointsEqual(w.start, corner) ? w.end : w.start)
-      const merged = { ...keep, start: { ...far(keep) }, end: { ...far(drop) } }
-      walls = walls.filter((w) => w.id !== drop.id).map((w) => (w.id === keep.id ? merged : w))
-      for (const [from, to] of replaced) if (to === drop.id) replaced.set(from, keep.id)
-      replaced.set(drop.id, keep.id)
-    }
-    return walls === room.walls ? room : { ...room, walls }
-  })
-  if (replaced.size === 0) return { plan, replaced }
-  return { plan: { ...plan, rooms, updatedAt: Date.now() }, replaced }
+  let current = walls
+  for (;;) {
+    const merge = findMergeablePair(current)
+    if (!merge) break
+    const { keep, drop, corner } = merge
+    const far = (w: Wall) => (pointsEqual(w.start, corner) ? w.end : w.start)
+    const merged = { ...keep, start: { ...far(keep) }, end: { ...far(drop) } }
+    current = current.filter((w) => w.id !== drop.id).map((w) => (w.id === keep.id ? merged : w))
+    for (const [from, to] of replaced) if (to === drop.id) replaced.set(from, keep.id)
+    replaced.set(drop.id, keep.id)
+  }
+  return { walls: current, replaced }
 }
 
-function findMergeablePair(walls: Wall[]): { keep: Wall; drop: Wall; corner: Point } | undefined {
+function findMergeablePair(
+  walls: readonly Wall[],
+): { keep: Wall; drop: Wall; corner: Point } | undefined {
   const byCorner = new Map<string, Wall[]>()
   for (const w of walls) {
     for (const p of [w.start, w.end]) {
@@ -201,10 +191,29 @@ function inline(a: Wall, b: Wall, corner: Point): boolean {
 }
 
 /**
- * Brings walls back to canonical form after any edit: junctions become corners
- * (splitWallsAtJunctions), then inline pairs that no longer need a corner are joined
- * (mergeCollinearWalls). `replaced` maps removed wall ids to the wall that absorbed them.
+ * Canonical form after a local edit: junctions become corners, then inline pairs that no longer
+ * need a corner are joined. `replaced` maps removed wall ids to the wall that absorbed them.
+ * Only run on local edits; remote changes are applied as-is (ADR-0011).
  */
-export function normalizeWalls(plan: Plan): { plan: Plan; replaced: Map<string, string> } {
-  return mergeCollinearWalls(splitWallsAtJunctions(plan))
+export function normalizeWalls(walls: readonly Wall[]): {
+  walls: readonly Wall[]
+  replaced: Map<string, string>
+} {
+  return mergeCollinearWalls(splitWallsAtJunctions(walls))
+}
+
+export const wallCollection: CollectionSpec<Wall> = {
+  name: 'walls',
+  version: 1,
+  parse(raw) {
+    if (!isObject(raw) || !isString(raw.id)) return undefined
+    if (!isPoint(raw.start) || !isPoint(raw.end) || !isFiniteNumber(raw.thickness)) return undefined
+    if (raw.thickness <= 0 || pointsEqual(raw.start, raw.end)) return undefined
+    return {
+      id: raw.id,
+      start: { x: raw.start.x, y: raw.start.y },
+      end: { x: raw.end.x, y: raw.end.y },
+      thickness: raw.thickness,
+    }
+  },
 }

@@ -7,8 +7,8 @@ Suggested order — each item is roughly one PR:
 ### Foundations
 
 - [ ] Zoom + pan on the stage (wheel zoom to cursor, space/middle-drag pan); world ↔ screen transform util in core
-- [ ] Undo/redo history in the plan store (commit on action end, not per drag frame)
-- [ ] localStorage persistence: auto-save on change, load last plan on start, schema-version check
+- [ ] Undo/redo: inverse change batches with origin `undo`, one entry per committed action (ADR-0011)
+- [x] Document model + change stream; generic persistence engine (collections and local settings plug in): autosave, restore on start, per-collection versions, damaged-data tolerance (ADR-0011)
 - [ ] Plan list: create / rename / delete / switch plans
 
 - [x] Browser tests (`npm run e2e`): headless Firefox, covering keyboard and wall editing

@@ -1,4 +1,4 @@
-import type { Clearance, Facing, ItemShape, Layer } from '../model/plan.ts'
+import type { Clearance, Facing, ItemShape, Layer } from '../model/entities.ts'
 
 export interface Catalog {
   version: string

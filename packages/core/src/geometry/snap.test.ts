@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { Wall } from '../model/plan.ts'
+import type { Wall } from '../model/entities.ts'
 import { snapTranslation, snapWallPoint, type SnapOptions } from './snap.ts'
 
 const horizontal: Wall = { id: 'h', start: { x: 0, y: 0 }, end: { x: 120, y: 0 }, thickness: 4 }

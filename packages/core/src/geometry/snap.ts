@@ -1,4 +1,4 @@
-import type { Point, Wall } from '../model/plan.ts'
+import type { Point, Wall } from '../model/entities.ts'
 import { closestPointOnSegment, distance, nearestWithin, roundPoint } from './geometry.ts'
 
 export type SnapKind = 'endpoint' | 'wall' | 'grid' | 'free'

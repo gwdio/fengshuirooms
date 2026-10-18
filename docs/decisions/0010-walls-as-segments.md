@@ -16,7 +16,7 @@ always straight.
 closed. Connected walls share **exact** endpoint coordinates: the pen snaps to existing endpoints
 and rounds everything else to whole inches, so equality checks are reliable.
 
-**Walls are kept in canonical form.** After every wall edit the plan store runs `normalizeWalls`:
+**Walls are kept in canonical form.** After every local wall edit, the walls feature (`apps/web/src/walls/walls.ts`) runs `normalizeWalls` before committing:
 
 1. `splitWallsAtJunctions`: any wall with another wall's endpoint strictly inside it is split
    there (the first piece keeps the original id). A wall started from the middle of another gives
