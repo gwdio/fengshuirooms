@@ -1,4 +1,5 @@
 import { redo, undo } from '../doc/history.ts'
+import { PRIORITY } from '../input/keyboard.ts'
 import { useKeyBindings } from '../input/useKeyboard.ts'
 import { useEditorStore } from '../state/editorStore.ts'
 import { useSelection } from '../state/selectionStore.ts'
@@ -21,7 +22,11 @@ export function useEditorShortcuts() {
       allowRepeat: true,
       run: redo,
     },
-    ...EDITOR_TOOLS.map((t) => ({ keys: [t.key], description: t.description, run: t.activate })),
+    ...EDITOR_TOOLS.filter((t) => t.bindKey !== false).map((t) => ({
+      keys: [t.key],
+      description: t.description,
+      run: t.activate,
+    })),
     {
       keys: ['Mod+=', 'Mod++', 'Mod+Shift++'],
       description: 'Zoom in',
@@ -37,12 +42,19 @@ export function useEditorShortcuts() {
     { keys: ['Mod+0'], description: 'Zoom to 100%', run: resetZoom },
     { keys: ['Shift+!', 'Shift+1'], description: 'Fit plan to view', run: fitToPlan },
     {
-      // Hold Space to pan (useCanvasNavigation). Claimed so it doesn't scroll the page or press
-      // a focused button.
+      // Space drives the Pan tool (panTool.ts: tap toggles, hold pans briefly). Claimed here so it
+      // doesn't scroll the page or press a focused button.
       keys: ['Space'],
       description: 'Hold to pan',
       allowRepeat: true,
       run: () => {},
+    },
+    {
+      keys: ['Escape'],
+      description: 'Leave the Pan tool',
+      priority: PRIORITY.tool,
+      when: () => useEditorStore.getState().tool === 'pan',
+      run: () => useEditorStore.getState().togglePan(),
     },
     {
       keys: ['g'],

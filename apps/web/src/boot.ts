@@ -6,6 +6,7 @@ import {
   type PlanMeta,
   type Viewport,
 } from '@space-planner/core'
+import { initPanTool } from './editor/panTool.ts'
 import { useViewport } from './editor/viewport.ts'
 import { registerCollection } from './doc/collections.ts'
 import './doc/history.ts' // starts recording the change stream
@@ -55,6 +56,8 @@ registerLocalSetting<Viewport>({
   set: (vp) => useViewport.setState(vp),
   subscribe: (onChange) => useViewport.subscribe(onChange),
 })
+
+initPanTool()
 
 initPersistence({
   docName: (c) =>

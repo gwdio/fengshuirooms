@@ -67,7 +67,7 @@ export function EditorCanvas() {
 
   const cursor = panning
     ? 'grabbing'
-    : spaceHeld
+    : spaceHeld || tool === 'pan'
       ? 'grab'
       : tool === 'select'
         ? 'default'

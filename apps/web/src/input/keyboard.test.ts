@@ -152,6 +152,12 @@ describe('KeyboardEngine', () => {
     expect(kb.isHeld(' ')).toBe(false)
   })
 
+  it('does not count Space typed into a text field as held', () => {
+    const kb = new KeyboardEngine()
+    kb.handleKeyDown(key(' ', { code: 'Space', target: { tagName: 'INPUT', type: 'text' } }))
+    expect(kb.isHeld(' ')).toBe(false)
+  })
+
   it('tracks held modifiers and clears them on blur', () => {
     const kb = new KeyboardEngine()
     const changed = vi.fn<() => void>()

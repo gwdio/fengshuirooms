@@ -137,9 +137,10 @@ export class KeyboardEngine {
 
   /** Returns true if a binding handled the event. */
   handleKeyDown(e: KeyEventLike): boolean {
-    this.setHeld(e.key, true)
-    if (e.isComposing || MODIFIER_KEYS.has(e.key)) return false
     const editable = isEditableTarget(e.target)
+    // A space typed into a text field isn't "holding Space"; modifiers count everywhere.
+    if (!editable || MODIFIER_KEYS.has(e.key)) this.setHeld(e.key, true)
+    if (e.isComposing || MODIFIER_KEYS.has(e.key)) return false
     const candidates = this.bindings
       .filter(({ binding, chords }) => {
         if (editable && !binding.allowInInput) return false

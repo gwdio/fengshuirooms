@@ -45,9 +45,11 @@ One action is one batch: drags commit once on drop.
 
 ## Editor tools
 
-`editor/editorTools.ts` lists the editor's top-level tools: currently **Select (V)** and **Place
-(P)**, where Place is active for any element tool and its button shows what it will place. Each entry
-has a label, key, `isActive`, and `activate`. The toolbar renders a button per entry, and
+`editor/editorTools.ts` lists the editor's top-level tools: currently **Select (V)**, **Pan (Space)**,
+and **Place (P)**. Place is active for any element tool, and its button shows what it will place. Each entry
+has a label, key, `isActive`, and `activate`. `bindKey: false` means the key is displayed but handled
+elsewhere: Space is tap-to-toggle Pan and hold-to-pan-briefly (`editor/panTool.ts`, decided on release:
+under 400ms without panning counts as a tap). The toolbar renders a button per entry, and
 `useEditorShortcuts` binds each key, so adding a tool (e.g. grouping) is one entry here. Element
 choice lives in the elements panel, not the toolbar.
 

@@ -8,6 +8,7 @@ import { EDITOR_TOOLS } from './editorTools.ts'
 const HINTS: Record<Tool, string> = {
   select:
     'P places the last used element · click to select · drag a wall to move it on its own · drag a door/window to slide it · drag a corner to move every wall there (only the selected ones, if any) · Delete or drag off the canvas removes (doors/windows become wall)',
+  pan: 'Drag to move around · tap Space or Esc to go back · hold Space in any tool to pan briefly',
   wall: 'Click corners or drag a wall · start or end on any wall · click the start to close · double-click / Enter to finish · Backspace undoes last wall · Esc exits',
   door: 'Click a wall to add a door · Esc exits',
   window: 'Click a wall to add a window · Esc exits',
@@ -33,7 +34,7 @@ export function Toolbar() {
               key={t.id}
               type="button"
               data-tool={t.id}
-              title={`${label} (${t.key.toUpperCase()}): ${t.description}`}
+              title={`${label} (${keyName(t.key)}): ${t.description}`}
               aria-pressed={active}
               onClick={t.activate}
               className={`rounded border px-2 py-1 text-sm whitespace-nowrap ${
@@ -42,7 +43,7 @@ export function Toolbar() {
                   : 'border-gray-300 hover:bg-gray-100'
               }`}
             >
-              {label} <span className="opacity-60">{t.key.toUpperCase()}</span>
+              {label} <span className="opacity-60">{keyName(t.key)}</span>
             </button>
           )
         })}
@@ -93,4 +94,8 @@ function HistoryButtons() {
       </button>
     </div>
   )
+}
+
+function keyName(key: string): string {
+  return key.length === 1 ? key.toUpperCase() : key
 }

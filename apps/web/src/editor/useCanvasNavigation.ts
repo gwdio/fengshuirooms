@@ -1,11 +1,13 @@
 import { useEffect, useState, type RefObject } from 'react'
 import { keyboard } from '../input/useKeyboard.ts'
+import { useEditorStore } from '../state/editorStore.ts'
 import { clientToStage } from './canvasElement.ts'
+import { notePanned } from './panTool.ts'
 import { pan, zoomBy } from './viewport.ts'
 
 // Zoom and pan input on the canvas container (plain DOM listeners, outside Konva):
 // - wheel (and trackpad pinch, which arrives as ctrl+wheel) zooms toward the pointer;
-// - middle-drag, or left-drag while Space is held, pans.
+// - middle-drag, or left-drag while Space is held or the Pan tool is active, pans.
 // Pan presses are stopped in the capture phase so Konva never sees them (no tool action, no drag).
 
 /** How much one wheel "pixel" zooms; 100px of wheel ≈ ×1.16. */
@@ -28,7 +30,9 @@ export function useCanvasNavigation(ref: RefObject<HTMLDivElement | null>): bool
     }
 
     let last: { x: number; y: number } | null = null
-    const isPanPress = (e: MouseEvent) => e.button === 1 || (e.button === 0 && keyboard.isHeld(' '))
+    const isPanPress = (e: MouseEvent) =>
+      e.button === 1 ||
+      (e.button === 0 && (keyboard.isHeld(' ') || useEditorStore.getState().tool === 'pan'))
     const onPress = (e: MouseEvent) => {
       if (!isPanPress(e)) return
       e.preventDefault() // no autoscroll on middle click
@@ -42,6 +46,7 @@ export function useCanvasNavigation(ref: RefObject<HTMLDivElement | null>): bool
     const onMove = (e: PointerEvent) => {
       if (!last) return
       pan({ x: e.clientX - last.x, y: e.clientY - last.y })
+      notePanned()
       last = { x: e.clientX, y: e.clientY }
     }
     const onRelease = () => {

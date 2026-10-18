@@ -11,6 +11,11 @@ export interface EditorTool {
   label: (state: { lastElement: Tool }) => string
   /** Shortcut chord, shown on the button. */
   key: string
+  /**
+   * False when the key needs more than a plain press and another module handles it (Pan: Space
+   * is tap-to-toggle / hold-for-temporary, see panTool.ts). Default true.
+   */
+  bindKey?: boolean
   description: string
   isActive: (tool: Tool) => boolean
   activate: () => void
@@ -24,6 +29,15 @@ export const EDITOR_TOOLS: readonly EditorTool[] = [
     description: 'Select and move walls, doors, and windows',
     isActive: (tool) => tool === 'select',
     activate: () => useEditorStore.getState().setTool('select'),
+  },
+  {
+    id: 'pan',
+    label: () => 'Pan',
+    key: 'Space',
+    bindKey: false,
+    description: 'Drag to move around. Tap Space to toggle; hold Space in any tool to pan briefly',
+    isActive: (tool) => tool === 'pan',
+    activate: () => useEditorStore.getState().togglePan(),
   },
   {
     id: 'place',
