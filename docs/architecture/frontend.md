@@ -62,8 +62,10 @@ Don't use Konva's `dblclick`: it fires for any two clicks within 400ms, even far
   download. `npm run e2e` starts Vite in-process, runs every file, and stops it. `npm run e2e -- corners`
   runs only files whose name contains `corners`. Tests use plan inches. They read wall geometry
   straight from the Konva stage (`window.Konva`) and assert invariants such as "one handle per corner".
-- `npm run e2e` is **not** part of `npm run check` or CI yet, because it needs a browser. Run it for any
-  canvas or keyboard change.
+- `npm run e2e` is deliberately **not** in `npm run check` or CI. It's slow, and fast iteration
+  matters more right now than making GitHub runners do it on every push. Run it locally for any
+  canvas or keyboard change. If it's wired into CI later, the plan is to run it only on merges to
+  `main`.
 
 ## Undo / redo
 

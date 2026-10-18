@@ -14,6 +14,7 @@ lean and write an ADR, or — if the lean looks wrong — stop and ask.
 | Undo: full snapshots vs patches?                          | Snapshots (plans are small); patches if memory shows up in profiling      | Phase 1          |
 | Where do background images live once cloud save exists?   | S3 object referenced by URL; never inside the DynamoDB blob or share hash | Phase 5          |
 | Product name / domain?                                    | "Space Planner" is a working title                                        | Phase 4 (domain) |
+| Run browser tests (`npm run e2e`) in CI?                  | Not yet (too slow for fast iteration); later only on merges to `main`     | Owner            |
 
 ## Explicitly deferred or rejected
 
