@@ -21,5 +21,5 @@ export function getMeta(): PlanMeta {
 }
 
 export function setUnits(units: Units): void {
-  commitCollection(metaCollection.name, [{ ...getMeta(), units }])
+  commitCollection(metaCollection.name, [{ ...getMeta(), units }], { label: 'Change units' })
 }

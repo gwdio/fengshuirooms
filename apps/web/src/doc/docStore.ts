@@ -1,8 +1,10 @@
 import {
   applyChanges,
+  currentValues,
   diffEntities,
   newId,
   toEntityMap,
+  type AppliedBatch,
   type ChangeBatch,
   type ChangeOrigin,
   type DocCollections,
@@ -25,7 +27,7 @@ interface DocState {
 
 export const useDoc = create<DocState>()(() => ({ docId: newId(), collections: {} }))
 
-type ChangeListener = (batch: ChangeBatch) => void
+type ChangeListener = (batch: AppliedBatch) => void
 const listeners = new Set<ChangeListener>()
 
 /** Subscribes to every applied change batch. Returns an unsubscribe function. */
@@ -34,11 +36,17 @@ export function onChanges(listener: ChangeListener): () => void {
   return () => listeners.delete(listener)
 }
 
-/** Applies a batch (from a local edit, a load, undo, or later a remote peer) and notifies listeners. */
+/**
+ * Applies a batch (a local edit, a load, undo/redo, or later a remote peer) and notifies listeners
+ * with the values it replaced, which history needs to invert it.
+ */
 export function applyBatch(batch: ChangeBatch): void {
   if (batch.changes.length === 0) return
-  useDoc.setState((s) => ({ collections: applyChanges(s.collections, batch.changes) }))
-  for (const l of listeners) l(batch)
+  const { collections } = useDoc.getState()
+  const previous = currentValues(collections, batch.changes)
+  useDoc.setState({ collections: applyChanges(collections, batch.changes) })
+  const applied: AppliedBatch = { ...batch, previous }
+  for (const l of listeners) l(applied)
 }
 
 /**
@@ -48,11 +56,15 @@ export function applyBatch(batch: ChangeBatch): void {
 export function commitCollection<T extends Entity>(
   name: string,
   next: EntityMap<T> | readonly T[],
-  origin: ChangeOrigin = 'local',
+  opts: { label?: string; origin?: ChangeOrigin } = {},
 ): void {
   const prev = useDoc.getState().collections[name] ?? {}
   const nextMap = Array.isArray(next) ? toEntityMap(next as readonly T[]) : (next as EntityMap<T>)
-  applyBatch({ origin, changes: diffEntities(name, prev, nextMap) })
+  applyBatch({
+    origin: opts.origin ?? 'local',
+    label: opts.label,
+    changes: diffEntities(name, prev, nextMap),
+  })
 }
 
 /** Swaps in a whole document (e.g. opening a saved plan), emitted as one 'load' batch. */
@@ -63,8 +75,9 @@ export function replaceDoc(docId: string, collections: DocCollections): void {
   for (const name of names) {
     changes.push(...diffEntities(name, prev[name] ?? {}, collections[name] ?? {}))
   }
+  const previous = currentValues(prev, changes)
   useDoc.setState({ docId, collections })
-  for (const l of listeners) l({ origin: 'load', changes })
+  for (const l of listeners) l({ origin: 'load', changes, previous })
 }
 
 export function getCollection<T extends Entity>(name: string): EntityMap<T> {

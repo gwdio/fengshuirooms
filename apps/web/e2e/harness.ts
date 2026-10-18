@@ -31,6 +31,8 @@ export interface App {
   /** Clicks each point in order with the wall tool, then presses Enter. Leaves the wall tool active. */
   drawChain(...points: [number, number][]): Promise<void>
   key(key: string): Promise<void>
+  /** Presses a combination like "Control+Shift+z". */
+  chord(combo: string): Promise<void>
   /** Walls as "x1,y1,x2,y2" strings in inches, sorted. */
   walls(): Promise<string[]>
   /** Text of the pressed toolbar buttons, e.g. "Select V | Grid snap on G". */
@@ -113,6 +115,13 @@ export function useApp(): App {
     await app.key('Enter')
   }
   app.key = async (key) => app.page.keyboard.press(key as Parameters<Page['keyboard']['press']>[0])
+  app.chord = async (combo) => {
+    const keys = combo.split('+') as Parameters<Page['keyboard']['press']>[0][]
+    const main = keys.pop()!
+    for (const k of keys) await app.page.keyboard.down(k)
+    await app.page.keyboard.press(main)
+    for (const k of keys.reverse()) await app.page.keyboard.up(k)
+  }
   app.walls = async () =>
     app.page.evaluate((ppi) => {
       const layer = window.Konva.stages[0]!.getLayers()[1]!

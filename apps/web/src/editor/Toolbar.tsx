@@ -1,3 +1,4 @@
+import { redo, undo, useHistory } from '../doc/history.ts'
 import { useHeldKey } from '../input/useKeyboard.ts'
 import { useEditorStore, type Tool } from '../state/editorStore.ts'
 
@@ -56,7 +57,39 @@ export function Toolbar() {
       >
         Grid snap {gridActive ? 'on' : 'off'} <span className="opacity-60">G</span>
       </button>
+      <HistoryButtons />
       <p className="truncate text-xs text-gray-500">{hint}</p>
+    </div>
+  )
+}
+
+const MOD =
+  typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl+'
+
+function HistoryButtons() {
+  const { canUndo, canRedo, undoLabel, redoLabel } = useHistory()
+  const button =
+    'rounded border border-gray-300 px-2 py-1 text-sm enabled:hover:bg-gray-100 disabled:opacity-40'
+  return (
+    <div className="flex shrink-0 gap-1">
+      <button
+        type="button"
+        title={canUndo ? `Undo ${undoLabel ?? ''} (${MOD}Z)` : 'Nothing to undo'}
+        disabled={!canUndo}
+        onClick={undo}
+        className={button}
+      >
+        Undo
+      </button>
+      <button
+        type="button"
+        title={canRedo ? `Redo ${redoLabel ?? ''} (${MOD}Shift+Z)` : 'Nothing to redo'}
+        disabled={!canRedo}
+        onClick={redo}
+        className={button}
+      >
+        Redo
+      </button>
     </div>
   )
 }

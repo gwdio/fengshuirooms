@@ -35,6 +35,14 @@ See [ADR-0011](../decisions/0011-plan-as-entity-document.md) and [data-model.md]
 - **Plug in a new feature's data** by registering its `CollectionSpec` in `boot.ts`. Persistence (and
   later sync) picks it up with no further code. Per-browser preferences use `registerLocalSetting`.
 
+## Undo / redo
+
+`doc/history.ts` feeds core's append-only `History` from the change stream ([ADR-0012](../decisions/0012-undo-as-revert-commits.md)).
+Undo and redo apply new batches (origins `undo`/`redo`) rather than rewinding, so persistence and
+later sync need no special cases. Shortcuts: Mod+Z, Mod+Shift+Z, Mod+Y; Undo/Redo toolbar buttons
+show the label of what they'll do. Give every commit a `label` (`commitCollection(name, next, { label })`).
+One action is one batch: drags commit once on drop.
+
 ## Persistence
 
 `persistence/engine.ts`. On start it restores local settings and the last document (via core's
@@ -88,12 +96,6 @@ Don't use Konva's `dblclick`: it fires for any two clicks within 400ms, even far
   matters more right now than making GitHub runners do it on every push. Run it locally for any
   canvas or keyboard change. If it's wired into CI later, the plan is to run it only on merges to
   `main`.
-
-## Undo / redo
-
-Plan state is immutable; each committed action pushes a snapshot (or patch) onto a history stack.
-Drags commit **once on drag end**, not per frame. Selection and view state (zoom, pan) are not part
-of history.
 
 ## Performance rules
 

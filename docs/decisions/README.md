@@ -16,5 +16,6 @@ decision, write a new ADR that supersedes the old one and update the old one's s
 | [0009](0009-konva-for-canvas.md)        | Konva (react-konva) for the editor canvas                       | Accepted | 2026-10-17                  |
 | [0010](0010-walls-as-segments.md)       | Walls are independent straight segments                         | Accepted | 2026-10-17                  |
 | [0011](0011-plan-as-entity-document.md) | Plan is a document of entity collections with one change stream | Accepted | 2026-10-17                  |
+| [0012](0012-undo-as-revert-commits.md)  | Undo/redo as forward "revert" commits                           | Accepted | 2026-10-17                  |
 
 Undecided items: [open-questions.md](open-questions.md). New ADRs: copy [template.md](template.md).

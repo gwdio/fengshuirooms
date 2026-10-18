@@ -1,5 +1,6 @@
 import { META_ID, metaCollection, wallCollection, type PlanMeta } from '@space-planner/core'
 import { registerCollection } from './doc/collections.ts'
+import './doc/history.ts' // starts recording the change stream
 import { initPersistence } from './persistence/engine.ts'
 import { registerLocalSetting } from './persistence/localSettings.ts'
 import { useEditorStore } from './state/editorStore.ts'

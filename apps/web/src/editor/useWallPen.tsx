@@ -6,6 +6,7 @@ import { create } from 'zustand'
 import { PRIORITY } from '../input/keyboard.ts'
 import { useHeldKey, useKeyBindings } from '../input/useKeyboard.ts'
 import { useEditorStore } from '../state/editorStore.ts'
+import { onChanges } from '../doc/docStore.ts'
 import { useMeta } from '../doc/meta.ts'
 import { addWall, removeWalls, useWalls } from '../walls/walls.ts'
 import { PreviewSegment } from './PreviewSegment.tsx'
@@ -37,6 +38,12 @@ interface PenState {
 
 const usePen = create<PenState>()(() => ({ chain: null, press: null, hover: null }))
 const setPen = usePen.setState
+
+// Undo, redo, or opening another plan can remove the walls the chain is built on; start over
+// rather than continue from a corner that may no longer exist.
+onChanges(({ origin }) => {
+  if (origin === 'undo' || origin === 'redo' || origin === 'load') setPen({ chain: null })
+})
 const RESET: PenState = { chain: null, press: null, hover: null }
 
 /** Where a screen point lands for the pen; the chain's start counts as a corner. */

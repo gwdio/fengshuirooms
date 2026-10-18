@@ -1,3 +1,4 @@
+import { redo, undo } from '../doc/history.ts'
 import { useKeyBindings } from '../input/useKeyboard.ts'
 import { useEditorStore } from '../state/editorStore.ts'
 import { useSelection } from '../state/selectionStore.ts'
@@ -6,6 +7,18 @@ import { removeWalls } from '../walls/walls.ts'
 /** App-wide editor shortcuts. Tool-specific keys are registered by the tool itself. */
 export function useEditorShortcuts() {
   useKeyBindings([
+    {
+      keys: ['Mod+z'],
+      description: 'Undo',
+      allowRepeat: true,
+      run: undo,
+    },
+    {
+      keys: ['Mod+Shift+z', 'Mod+y'],
+      description: 'Redo',
+      allowRepeat: true,
+      run: redo,
+    },
     {
       keys: ['v'],
       description: 'Select tool',

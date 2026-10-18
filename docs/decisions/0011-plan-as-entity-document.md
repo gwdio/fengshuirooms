@@ -48,8 +48,8 @@ there's no unit of change smaller than "the whole plan" to save, undo, or send t
 
 ## Consequences
 
-- Undo becomes "apply the inverse batch with origin `undo`"; sync becomes "send `local`/`undo` batches,
-  apply received ones as `remote`".
+- Undo applies the inverse batch with origin `undo` (built in [ADR-0012](0012-undo-as-revert-commits.md)).
+  Sync will send `local`/`undo`/`redo` batches and apply received ones as `remote`.
 - Entity references can dangle: an item's `layoutId` or a door's `wallId` may point at something a
   peer deleted. Readers must handle that, which will matter for doors and windows.
 - **Known Phase 6 problem**: concurrent local normalizations can diverge. If two people split the

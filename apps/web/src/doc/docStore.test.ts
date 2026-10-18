@@ -22,7 +22,7 @@ describe('docStore', () => {
     const moved = { ...w2, end: { x: 96, y: 60 } }
     commitCollection(W, [w1, moved])
     expect(batches).toEqual([
-      { origin: 'local', changes: [{ collection: W, id: w2.id, value: moved }] },
+      { origin: 'local', changes: [{ collection: W, id: w2.id, value: moved }], previous: [w2] },
     ])
   })
 

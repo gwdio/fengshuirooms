@@ -13,9 +13,10 @@ export type DocCollections = Readonly<Record<string, EntityMap>>
 
 /**
  * Where a batch came from. Consumers use this to decide what to do: e.g. persistence saves
- * everything except 'load'; sync sends only 'local' and 'undo'; normalization runs only on 'local'.
+ * everything except 'load'; sync will send 'local', 'undo', and 'redo'; normalization runs only on
+ * 'local'; history records 'local' edits as undoable.
  */
-export type ChangeOrigin = 'local' | 'load' | 'remote' | 'undo'
+export type ChangeOrigin = 'local' | 'load' | 'remote' | 'undo' | 'redo'
 
 /** One entity written (`value`) or deleted (`value: null`). Whole-entity granularity: last write wins. */
 export interface EntityChange {
@@ -27,6 +28,31 @@ export interface EntityChange {
 export interface ChangeBatch {
   origin: ChangeOrigin
   changes: readonly EntityChange[]
+  /** Human-readable description, e.g. "Move corner". Shown in history. */
+  label?: string
+}
+
+/** A batch as it was applied: `previous[i]` is what `changes[i]` replaced (null if it didn't exist). */
+export interface AppliedBatch extends ChangeBatch {
+  previous: readonly (Entity | null)[]
+}
+
+/** The changes that undo `changes`, given the values they replaced. */
+export function invertChanges(
+  changes: readonly EntityChange[],
+  previous: readonly (Entity | null)[],
+): EntityChange[] {
+  return changes
+    .map((c, i) => ({ collection: c.collection, id: c.id, value: previous[i] ?? null }))
+    .reverse()
+}
+
+/** The current value of each changed entity, in the same order (null if absent). */
+export function currentValues(
+  collections: DocCollections,
+  changes: readonly EntityChange[],
+): (Entity | null)[] {
+  return changes.map((c) => collections[c.collection]?.[c.id] ?? null)
 }
 
 export function toEntityMap<T extends Entity>(list: readonly T[]): EntityMap<T> {

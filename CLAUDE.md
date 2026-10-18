@@ -34,7 +34,8 @@ Prefer the simplest thing that works, and don't add tooling, abstractions, or co
   store display units.
 - Document data lives in entity collections ([ADR-0011](docs/decisions/0011-plan-as-entity-document.md)).
   A feature that stores data registers a `CollectionSpec` (or a `LocalSetting` for per-browser prefs)
-  in `apps/web/src/boot.ts`, writes through `commitCollection`, and reacts to `onChanges`. Never
+  in `apps/web/src/boot.ts`, writes through `commitCollection` (one user action = one commit, with a
+  `label` for undo/history), and reacts to `onChanges`. Never
   call persistence directly. Changing an entity's stored shape means bumping its collection
   `version` and adding a migration.
 - Assume any entity can change or vanish at any time (later: other people). Code holding ids across
