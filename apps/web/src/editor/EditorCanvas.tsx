@@ -3,6 +3,7 @@ import { Layer, Line, Stage } from 'react-konva'
 import { useEditorStore } from '../state/editorStore.ts'
 import { useSelection } from '../state/selectionStore.ts'
 import { CornerHandles } from './CornerHandles.tsx'
+import { useOpeningTool } from './useOpeningTool.tsx'
 import { useWallPen } from './useWallPen.tsx'
 import { WallsLayer } from './WallsLayer.tsx'
 import { GRID_INCHES, PX_PER_INCH } from './viewport.ts'
@@ -14,6 +15,9 @@ export function EditorCanvas() {
   const setTool = useEditorStore((s) => s.setTool)
   const select = useSelection((s) => s.select)
   const pen = useWallPen(tool === 'wall', () => setTool('select'))
+  const opening = useOpeningTool(tool === 'door' || tool === 'window' ? tool : null, () =>
+    setTool('select'),
+  )
 
   useEffect(() => {
     const el = containerRef.current
@@ -43,19 +47,26 @@ export function EditorCanvas() {
           onMouseUp: pen.onMouseUp,
           onMouseLeave: pen.onMouseLeave,
         }
-      : { onClick: () => select([]) } // clicks on walls stop propagation, so this is empty space
+      : tool === 'door' || tool === 'window'
+        ? {
+            onMouseMove: opening.onMouseMove,
+            onMouseLeave: opening.onMouseLeave,
+            onClick: opening.onClick,
+          }
+        : { onClick: () => select([]) } // clicks on walls stop propagation, so this is empty space
 
   return (
     <div
       ref={containerRef}
       className="h-full w-full bg-white"
-      style={{ cursor: tool === 'wall' ? 'crosshair' : 'default' }}
+      style={{ cursor: tool === 'select' ? 'default' : 'crosshair' }}
     >
       <Stage width={size.width} height={size.height} {...handlers}>
         <Layer listening={false}>{lines}</Layer>
         <WallsLayer />
         {tool === 'select' && <CornerHandles />}
         {pen.preview}
+        {opening.preview}
       </Stage>
     </div>
   )

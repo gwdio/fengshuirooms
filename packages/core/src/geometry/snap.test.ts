@@ -2,8 +2,20 @@ import { describe, expect, it } from 'vitest'
 import type { Wall } from '../model/entities.ts'
 import { snapTranslation, snapWallPoint, type SnapOptions } from './snap.ts'
 
-const horizontal: Wall = { id: 'h', start: { x: 0, y: 0 }, end: { x: 120, y: 0 }, thickness: 4 }
-const diagonal: Wall = { id: 'd', start: { x: 0, y: 100 }, end: { x: 100, y: 200 }, thickness: 4 }
+const horizontal: Wall = {
+  id: 'h',
+  kind: 'wall',
+  start: { x: 0, y: 0 },
+  end: { x: 120, y: 0 },
+  thickness: 4,
+}
+const diagonal: Wall = {
+  id: 'd',
+  kind: 'wall',
+  start: { x: 0, y: 100 },
+  end: { x: 100, y: 200 },
+  thickness: 4,
+}
 
 const opts: SnapOptions = {
   endpoints: [horizontal.start, horizontal.end, diagonal.start, diagonal.end],

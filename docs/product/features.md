@@ -23,9 +23,14 @@ Untagged items are V1. Which phase builds what lives in [the roadmap](../roadmap
 
 ## Wall features
 
-- Doors with swing arc (configurable hinge side and swing direction)
-- Windows (placed along wall segments, configurable width)
-- Fixed features: outlets, vents, radiators, closets
+Doors and windows are segments of the wall itself ([ADR-0013](../decisions/0013-openings-as-wall-segments.md)).
+
+- Door (D) and Window (N) tools: hover a wall to preview, click to cut the opening in (36" default).
+  It fits itself inside the wall near an end; walls shorter than the opening are skipped.
+- Doors show their leaf and swing arc. Flip hinge / Flip swing are in the properties panel.
+- Drag a door or window to slide it along its wall. Drag its corner to resize it along the wall.
+- Delete a door or window to turn it back into wall.
+- Fixed features (outlets, vents, radiators, closets): not yet
 
 ## Furniture placement
 

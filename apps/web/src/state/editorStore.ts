@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 
 // Transient editor UI state. Never persisted, never part of undo history.
-export type Tool = 'select' | 'wall'
+export type Tool = 'select' | 'wall' | 'door' | 'window'
 
 interface EditorState {
   tool: Tool

@@ -2,7 +2,7 @@ import { redo, undo } from '../doc/history.ts'
 import { useKeyBindings } from '../input/useKeyboard.ts'
 import { useEditorStore } from '../state/editorStore.ts'
 import { useSelection } from '../state/selectionStore.ts'
-import { removeWalls } from '../walls/walls.ts'
+import { deleteSegments } from '../walls/walls.ts'
 
 /** App-wide editor shortcuts. Tool-specific keys are registered by the tool itself. */
 export function useEditorShortcuts() {
@@ -30,6 +30,16 @@ export function useEditorShortcuts() {
       run: () => useEditorStore.getState().setTool('wall'),
     },
     {
+      keys: ['d'],
+      description: 'Door tool',
+      run: () => useEditorStore.getState().setTool('door'),
+    },
+    {
+      keys: ['n'],
+      description: 'Window tool',
+      run: () => useEditorStore.getState().setTool('window'),
+    },
+    {
       keys: ['g'],
       description: 'Toggle grid snap',
       run: () => useEditorStore.getState().toggleSnapToGrid(),
@@ -41,7 +51,7 @@ export function useEditorShortcuts() {
         useEditorStore.getState().tool === 'select' &&
         useSelection.getState().selectedIds.length > 0,
       run: () => {
-        removeWalls(useSelection.getState().selectedIds)
+        deleteSegments(useSelection.getState().selectedIds)
       },
     },
     {

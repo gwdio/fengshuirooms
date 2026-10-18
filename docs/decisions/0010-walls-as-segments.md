@@ -28,6 +28,9 @@ and rounds everything else to whole inches, so equality checks are reliable.
    wall touches, with equal thickness, are joined into one. This undoes splits once the wall that
    caused them moves away, and turns collinear pen clicks into a single wall.
 
+Doors and windows are wall segments too, and all three steps leave them untouched
+([ADR-0013](0013-openings-as-wall-segments.md)).
+
 ## Alternatives
 
 - **Corner graph** (`corners[]` + walls referencing corner ids): this makes "drag a corner and every

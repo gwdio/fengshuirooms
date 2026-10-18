@@ -7,7 +7,7 @@ import {
   isString,
   type CollectionSpec,
 } from '../doc/collection.ts'
-import type { Point, Wall } from './entities.ts'
+import type { Point, Wall, WallKind } from './entities.ts'
 
 // Wall geometry operations. All functions are pure: they take a wall list and return a new one
 // (or the same array when nothing changed). Order is preserved where it matters (merge keeps the
@@ -43,7 +43,7 @@ export function createWall(
   thickness = DEFAULT_WALL_THICKNESS,
 ): Wall | undefined {
   if (distance(start, end) === 0) return undefined
-  return { id: newId(), start: { ...start }, end: { ...end }, thickness }
+  return { id: newId(), kind: 'wall', start: { ...start }, end: { ...end }, thickness }
 }
 
 export function removeWalls(walls: readonly Wall[], ids: readonly string[]): Wall[] {
@@ -111,6 +111,7 @@ export function splitWallsAtJunctions(walls: readonly Wall[]): readonly Wall[] {
   const corners = endpointsOf(walls)
   let changed = false
   const out = walls.flatMap((w) => {
+    if (w.kind !== 'wall') return [w] // openings are never cut (ADR-0013)
     const cuts = corners
       .filter(
         (p) =>
@@ -169,11 +170,16 @@ function findMergeablePair(
   for (const atCorner of byCorner.values()) {
     if (atCorner.length !== 2) continue
     const [a, b] = atCorner as [Wall, Wall]
-    if (a.thickness !== b.thickness) continue
+    if (!bothPlain(a, b) || a.thickness !== b.thickness) continue
     const corner = [a.start, a.end].find((p) => pointsEqual(p, b.start) || pointsEqual(p, b.end))!
     if (inline(a, b, corner)) return { keep: a, drop: b, corner }
   }
   return undefined
+}
+
+/** Merges only ever join plain walls; openings keep their identity and size. */
+function bothPlain(a: Wall, b: Wall): boolean {
+  return a.kind === 'wall' && b.kind === 'wall'
 }
 
 /** True when both walls leave `corner` in exactly opposite directions. */
@@ -218,7 +224,7 @@ function findOverlappingPair(walls: readonly Wall[]): [Wall, Wall] | undefined {
     for (let j = i + 1; j < walls.length; j++) {
       const a = walls[i]!
       const b = walls[j]!
-      if (a.thickness === b.thickness && overlapsOnLine(a, b)) return [a, b]
+      if (bothPlain(a, b) && a.thickness === b.thickness && overlapsOnLine(a, b)) return [a, b]
     }
   }
   return undefined
@@ -271,18 +277,31 @@ export function normalizeWalls(walls: readonly Wall[]): {
   return { walls: inline.walls, replaced }
 }
 
+const KINDS: readonly WallKind[] = ['wall', 'door', 'window']
+
 export const wallCollection: CollectionSpec<Wall> = {
   name: 'walls',
-  version: 1,
+  version: 2,
+  migrations: {
+    // v2 added `kind` (doors and windows are wall segments, ADR-0013).
+    1: (raw) => (isObject(raw) ? { ...raw, kind: 'wall' } : raw),
+  },
   parse(raw) {
     if (!isObject(raw) || !isString(raw.id)) return undefined
     if (!isPoint(raw.start) || !isPoint(raw.end) || !isFiniteNumber(raw.thickness)) return undefined
     if (raw.thickness <= 0 || pointsEqual(raw.start, raw.end)) return undefined
-    return {
+    if (!KINDS.includes(raw.kind as WallKind)) return undefined
+    const wall: Wall = {
       id: raw.id,
+      kind: raw.kind as WallKind,
       start: { x: raw.start.x, y: raw.start.y },
       end: { x: raw.end.x, y: raw.end.y },
       thickness: raw.thickness,
     }
+    if (wall.kind === 'door') {
+      wall.hinge = raw.hinge === 'end' ? 'end' : 'start'
+      wall.swing = raw.swing === 'right' ? 'right' : 'left'
+    }
+    return wall
   },
 }

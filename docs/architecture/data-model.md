@@ -8,15 +8,14 @@ A plan is a **document of entity collections** keyed by id, not a nested tree
 [`packages/core/src/model/entities.ts`](../../packages/core/src/model/entities.ts). The code wins if it
 and this doc disagree.
 
-| Collection    | Entity      | Status                                               |
-| ------------- | ----------- | ---------------------------------------------------- |
-| `meta`        | `PlanMeta`  | Live. A single entity `plan`: name, units, createdAt |
-| `walls`       | `Wall`      | Live. Straight segments                              |
-| `features`    | WallFeature | Planned: doors/windows, referencing `wallId`         |
-| `layouts`     | Layout      | Planned: named furniture arrangements                |
-| `items`       | PlacedItem  | Planned: furniture, referencing `layoutId`           |
-| `clearances`  | Clearance   | Planned: referencing `itemId`                        |
-| `annotations` | Annotation  | Planned                                              |
+| Collection    | Entity     | Status                                                                                                                        |
+| ------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `meta`        | `PlanMeta` | Live. A single entity `plan`: name, units, createdAt                                                                          |
+| `walls`       | `Wall`     | Live (v2). Straight segments of kind `wall`, `door`, or `window` ([ADR-0013](../decisions/0013-openings-as-wall-segments.md)) |
+| `layouts`     | Layout     | Planned: named furniture arrangements                                                                                         |
+| `items`       | PlacedItem | Planned: furniture, referencing `layoutId`                                                                                    |
+| `clearances`  | Clearance  | Planned: referencing `itemId`                                                                                                 |
+| `annotations` | Annotation | Planned                                                                                                                       |
 
 Changes are batches of `{ collection, id, value | null }` with an origin (`local`, `load`, `remote`,
 `undo`). Per-browser state (selection, tool, grid snap) is not in the document.

@@ -33,8 +33,10 @@ export interface App {
   key(key: string): Promise<void>
   /** Presses a combination like "Control+Shift+z". */
   chord(combo: string): Promise<void>
-  /** Walls as "x1,y1,x2,y2" strings in inches, sorted. */
+  /** Wall segments (including doors/windows) as "x1,y1,x2,y2" strings in inches, sorted. */
   walls(): Promise<string[]>
+  /** Like walls(), prefixed with the segment kind: "door:42,24,78,24". */
+  segments(): Promise<string[]>
   /** Text of the pressed toolbar buttons, e.g. "Select V | Grid snap on G". */
   pressed(): Promise<string>
   gridLabel(): Promise<string>
@@ -135,6 +137,22 @@ export function useApp(): App {
             .points()
             .map((v) => v / ppi)
             .join(',')
+        })
+        .sort()
+    }, PX_PER_INCH)
+  app.segments = async () =>
+    app.page.evaluate((ppi) => {
+      const layer = window.Konva.stages[0]!.getLayers()[1]!
+      return layer
+        .getChildren()
+        .map((g) => {
+          const line = (
+            g as unknown as { getChildren(): { points(): number[] }[] }
+          ).getChildren()[0]!
+          return `${g.name()}:${line
+            .points()
+            .map((v) => v / ppi)
+            .join(',')}`
         })
         .sort()
     }, PX_PER_INCH)

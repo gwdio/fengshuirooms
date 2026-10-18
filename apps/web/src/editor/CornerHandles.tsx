@@ -4,7 +4,7 @@ import { useSelection } from '../state/selectionStore.ts'
 import { getWalls, moveCorner, useWalls } from '../walls/walls.ts'
 import { setDrag, useEditDrag } from './drag.ts'
 import { SnapMarker } from './SnapMarker.tsx'
-import { snapScreenPoint } from './snapping.ts'
+import { snapCorner } from './snapping.ts'
 import { setStageCursor } from './stageCursor.ts'
 import { toScreen } from './viewport.ts'
 
@@ -77,7 +77,7 @@ function CornerHandle({ corner, detaches }: { corner: Point; detaches: boolean }
       dragBoundFunc={(pos) => {
         const drag = useEditDrag.getState().drag
         if (drag?.kind !== 'corner') return pos
-        const snap = snapScreenPoint(pos, { movingWallIds: drag.wallIds })
+        const snap = snapCorner(pos, drag.from, drag.wallIds)
         setDrag({ ...drag, snap })
         return toScreen(snap.point)
       }}

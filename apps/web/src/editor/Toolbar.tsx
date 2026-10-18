@@ -7,7 +7,7 @@ const TOOLS: { id: Tool; label: string; key: string; hint: string }[] = [
     id: 'select',
     label: 'Select',
     key: 'V',
-    hint: 'Click a wall to select · drag a wall to move it on its own · drag a corner to move every wall there (only the selected walls, if any) · Delete removes',
+    hint: 'Click to select · drag a wall to move it on its own · drag a door/window to slide it · drag a corner to move every wall there (only the selected ones, if any) · Delete removes (doors/windows become wall)',
   },
   {
     id: 'wall',
@@ -15,6 +15,8 @@ const TOOLS: { id: Tool; label: string; key: string; hint: string }[] = [
     key: 'W',
     hint: 'Click corners or drag a wall · start or end on any wall · click the start to close · double-click / Enter to finish · Backspace undoes last wall · Esc exits',
   },
+  { id: 'door', label: 'Door', key: 'D', hint: 'Click a wall to add a door · Esc exits' },
+  { id: 'window', label: 'Window', key: 'N', hint: 'Click a wall to add a window · Esc exits' },
 ]
 
 export function Toolbar() {

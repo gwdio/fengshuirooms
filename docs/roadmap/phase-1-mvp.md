@@ -28,8 +28,7 @@ Suggested order — each item is roughly one PR:
 - [x] Inline walls merge automatically: end-to-end, same direction, nothing else at the corner
 - [x] Overlapping walls merge: a wall dropped onto a parallel wall snaps into line and joins it
 - [ ] Insert/delete points on walls
-- [ ] Doors on walls with swing arc (hinge side, in/out) (deferred by owner; not in the MVP for now)
-- [ ] Windows on walls with width (deferred by owner; not in the MVP for now)
+- [x] Doors and windows as wall segments: place on a wall, slide, resize by corner, flip door hinge/swing, delete back to wall (ADR-0013)
 
 ### Furniture
 

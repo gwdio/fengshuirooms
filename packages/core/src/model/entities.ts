@@ -15,28 +15,28 @@ export interface Point {
   y: number
 }
 
+/** What a wall segment is: solid wall, or an opening in the wall line (ADR-0013). */
+export type WallKind = 'wall' | 'door' | 'window'
+
 /**
- * A straight wall segment, never curved. Connected walls share exact endpoint coordinates, and
- * walls are kept normalized (ADR-0010): no endpoint lies inside another wall, and no two inline
- * walls meet at an otherwise bare corner.
+ * A straight segment of the wall network, never curved. Doors and windows are segments too: an
+ * opening sits in the wall line between two plain wall pieces (ADR-0013). Connected segments share
+ * exact endpoint coordinates, and walls are kept normalized (ADR-0010).
  */
 export interface Wall {
   id: string
+  kind: WallKind
   start: Point
   end: Point
   /** Visual only. */
   thickness: number
-}
-
-export interface WallFeature {
-  id: string
-  wallId: string
-  type: 'door' | 'window'
-  /** 0–1 along the wall, measured from `start`. */
-  position: number
-  width: number
-  swingDirection?: 'in' | 'out'
-  hingeSide?: 'left' | 'right'
+  /** Doors only: which end the door is hinged at. */
+  hinge?: 'start' | 'end'
+  /**
+   * Doors only: which side the door swings to, looking from `start` to `end` on screen (y down).
+   * 'left' of an eastward door is north.
+   */
+  swing?: 'left' | 'right'
 }
 
 export interface FixedItem {
