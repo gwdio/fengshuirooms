@@ -1,6 +1,7 @@
 import { redo, undo, useHistory } from '../doc/history.ts'
 import { useHeldKey } from '../input/useKeyboard.ts'
 import { useEditorStore, type Tool } from '../state/editorStore.ts'
+import { EDITOR_TOOLS } from './editorTools.ts'
 
 // Wall, door, and window are picked from the elements panel; the toolbar keeps Select and
 // explains whatever tool is active.
@@ -14,7 +15,7 @@ const HINTS: Record<Tool, string> = {
 
 export function Toolbar() {
   const tool = useEditorStore((s) => s.tool)
-  const setTool = useEditorStore((s) => s.setTool)
+  const lastElement = useEditorStore((s) => s.lastElement)
   const snapToGrid = useEditorStore((s) => s.snapToGrid)
   const toggleSnapToGrid = useEditorStore((s) => s.toggleSnapToGrid)
   // What snapping will actually do right now, with Shift's inversion applied.
@@ -23,19 +24,29 @@ export function Toolbar() {
 
   return (
     <div className="flex min-w-0 items-center gap-3">
-      <button
-        type="button"
-        title="Select (V)"
-        aria-pressed={tool === 'select'}
-        onClick={() => setTool('select')}
-        className={`shrink-0 rounded border px-2 py-1 text-sm ${
-          tool === 'select'
-            ? 'border-teal-700 bg-teal-700 text-white'
-            : 'border-gray-300 hover:bg-gray-100'
-        }`}
-      >
-        Select <span className="opacity-60">V</span>
-      </button>
+      <div className="flex shrink-0 gap-1" role="toolbar" aria-label="Tools">
+        {EDITOR_TOOLS.map((t) => {
+          const active = t.isActive(tool)
+          const label = t.label({ lastElement })
+          return (
+            <button
+              key={t.id}
+              type="button"
+              data-tool={t.id}
+              title={`${label} (${t.key.toUpperCase()}): ${t.description}`}
+              aria-pressed={active}
+              onClick={t.activate}
+              className={`rounded border px-2 py-1 text-sm whitespace-nowrap ${
+                active
+                  ? 'border-teal-700 bg-teal-700 text-white'
+                  : 'border-gray-300 hover:bg-gray-100'
+              }`}
+            >
+              {label} <span className="opacity-60">{t.key.toUpperCase()}</span>
+            </button>
+          )
+        })}
+      </div>
       <button
         type="button"
         title="Snap to grid (G to toggle, hold Shift to invert)"

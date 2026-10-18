@@ -3,6 +3,7 @@ import { useKeyBindings } from '../input/useKeyboard.ts'
 import { useEditorStore } from '../state/editorStore.ts'
 import { useSelection } from '../state/selectionStore.ts'
 import { deleteSegments } from '../walls/walls.ts'
+import { EDITOR_TOOLS } from './editorTools.ts'
 
 /** App-wide editor shortcuts. Tool-specific keys are registered by the tool itself. */
 export function useEditorShortcuts() {
@@ -19,19 +20,7 @@ export function useEditorShortcuts() {
       allowRepeat: true,
       run: redo,
     },
-    {
-      keys: ['v'],
-      description: 'Select tool',
-      run: () => useEditorStore.getState().setTool('select'),
-    },
-    {
-      keys: ['p'],
-      description: 'Place: back to the last used element',
-      run: () => {
-        const { lastElement, setTool } = useEditorStore.getState()
-        setTool(lastElement)
-      },
-    },
+    ...EDITOR_TOOLS.map((t) => ({ keys: [t.key], description: t.description, run: t.activate })),
     {
       keys: ['g'],
       description: 'Toggle grid snap',

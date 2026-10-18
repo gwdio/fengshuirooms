@@ -30,6 +30,7 @@ Suggested order — each item is roughly one PR:
 - [ ] Insert/delete points on walls
 - [x] Elements panel: click to pick Wall/Door/Window, drag in to drop one, drag off the canvas to delete (no W/D/N hotkeys)
 - [x] Place mode: P returns to the last used element; ↑/↓ cycle elements (temporarily all arrows route to the panel)
+- [x] Toolbar as a list of editor tools (Select V, Place P) driving both buttons and shortcuts
 - [x] Doors and windows as wall segments: place on a wall, slide, resize by corner, flip door hinge/swing, delete back to wall (ADR-0013)
 
 ### Furniture

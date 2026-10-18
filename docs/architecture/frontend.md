@@ -43,6 +43,14 @@ later sync need no special cases. Shortcuts: Mod+Z, Mod+Shift+Z, Mod+Y; Undo/Red
 show the label of what they'll do. Give every commit a `label` (`commitCollection(name, next, { label })`).
 One action is one batch: drags commit once on drop.
 
+## Editor tools
+
+`editor/editorTools.ts` lists the editor's top-level tools: currently **Select (V)** and **Place
+(P)**, where Place is active for any element tool and its button shows what it will place. Each entry
+has a label, key, `isActive`, and `activate`. The toolbar renders a button per entry, and
+`useEditorShortcuts` binds each key, so adding a tool (e.g. grouping) is one entry here. Element
+choice lives in the elements panel, not the toolbar.
+
 ## Elements panel
 
 `panels/ElementsPanel.tsx` + `editor/palette.ts` (the entries) + `state/paletteDrag.ts` (the drag).

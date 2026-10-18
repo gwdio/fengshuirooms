@@ -63,4 +63,20 @@ describe('place mode (P) and Up/Down element switching', () => {
     await app.click(96, 96)
     assert.deepEqual(await app.walls(), ['24,24,96,24'])
   })
+
+  it('the toolbar has Select and Place tools; Place shows what it will place', async () => {
+    const label = (id: string) =>
+      app.page.$eval(`[data-tool="${id}"]`, (b) => b.textContent?.trim() ?? '')
+    const active = (id: string) =>
+      app.page.$eval(`[data-tool="${id}"]`, (b) => b.getAttribute('aria-pressed'))
+    assert.match(await label('place'), /Place · Wall/)
+    await app.tool('window')
+    assert.equal(await active('place'), 'true') // any element tool counts as Place
+    assert.equal(await active('select'), 'false')
+    await app.page.click('[data-tool="select"]')
+    assert.match(await label('place'), /Place · Window/)
+    await app.page.click('[data-tool="place"]')
+    assert.match(await app.pressed(), /Window/)
+    assert.equal(await active('place'), 'true')
+  })
 })

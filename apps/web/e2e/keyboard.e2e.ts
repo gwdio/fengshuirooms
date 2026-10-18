@@ -20,7 +20,7 @@ describe('keyboard', () => {
     await app.click(100, 100)
     await app.tool('door')
     assert.match(await app.pressed(), /Door/)
-    await app.page.click('button[title^="Select"]')
+    await app.page.click('[data-tool="select"]')
     await app.tool('window')
     await app.key('v')
     assert.match(await app.pressed(), /Select/)
