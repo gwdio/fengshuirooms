@@ -2,7 +2,7 @@ import { EditorCanvas } from './editor/EditorCanvas.tsx'
 import { Toolbar } from './editor/Toolbar.tsx'
 import { useEditorShortcuts } from './editor/useEditorShortcuts.ts'
 import { useKeyboardRoot } from './input/useKeyboard.ts'
-import { CatalogPanel } from './panels/CatalogPanel.tsx'
+import { ElementsPanel } from './panels/ElementsPanel.tsx'
 import { NoticeBar } from './panels/NoticeBar.tsx'
 import { PropertiesPanel } from './panels/PropertiesPanel.tsx'
 import { setUnits, useMeta } from './doc/meta.ts'
@@ -30,7 +30,7 @@ export default function App() {
       </header>
       <NoticeBar />
       <main className="flex min-h-0 flex-1">
-        <CatalogPanel />
+        <ElementsPanel />
         <div className="min-w-0 flex-1">
           <EditorCanvas />
         </div>

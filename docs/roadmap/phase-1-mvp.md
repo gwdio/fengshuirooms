@@ -28,6 +28,7 @@ Suggested order — each item is roughly one PR:
 - [x] Inline walls merge automatically: end-to-end, same direction, nothing else at the corner
 - [x] Overlapping walls merge: a wall dropped onto a parallel wall snaps into line and joins it
 - [ ] Insert/delete points on walls
+- [x] Elements panel: click to pick Wall/Door/Window, drag in to drop one, drag off the canvas to delete (no W/D/N hotkeys)
 - [x] Doors and windows as wall segments: place on a wall, slide, resize by corner, flip door hinge/swing, delete back to wall (ADR-0013)
 
 ### Furniture

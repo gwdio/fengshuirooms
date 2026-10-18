@@ -28,6 +28,12 @@ export interface App {
   click(x: number, y: number): Promise<void>
   /** Press at (x1,y1), move in steps, release at (x2,y2). */
   drag(x1: number, y1: number, x2: number, y2: number): Promise<void>
+  /** Picks a tool from the elements panel ('wall' | 'door' | 'window'). */
+  tool(name: string): Promise<void>
+  /** Drags an entry from the elements panel and drops it on the canvas at (x, y) inches. */
+  dropFromPanel(name: string, x: number, y: number): Promise<void>
+  /** Drags whatever is at (x, y) off the canvas and releases it over the elements panel. */
+  dragOut(x: number, y: number): Promise<void>
   /** Clicks each point in order with the wall tool, then presses Enter. Leaves the wall tool active. */
   drawChain(...points: [number, number][]): Promise<void>
   key(key: string): Promise<void>
@@ -111,8 +117,29 @@ export function useApp(): App {
     await app.page.mouse.move(...screen(x2, y2), { steps: 10 })
     await app.page.mouse.up()
   }
+  const paletteCenter = async (name: string) => {
+    const box = await (await app.page.$(`[data-palette="${name}"]`))!.boundingBox()
+    return { x: box!.x + box!.width / 2, y: box!.y + box!.height / 2 }
+  }
+  app.tool = async (name) => {
+    await app.page.click(`[data-palette="${name}"]`)
+  }
+  app.dropFromPanel = async (name, x, y) => {
+    const from = await paletteCenter(name)
+    await app.page.mouse.move(from.x, from.y)
+    await app.page.mouse.down()
+    await app.page.mouse.move(...screen(x, y), { steps: 12 })
+    await app.page.mouse.up()
+  }
+  app.dragOut = async (x, y) => {
+    const panel = await paletteCenter('window')
+    await app.page.mouse.move(...screen(x, y))
+    await app.page.mouse.down()
+    await app.page.mouse.move(panel.x, panel.y + 120, { steps: 12 })
+    await app.page.mouse.up()
+  }
   app.drawChain = async (...points) => {
-    await app.key('w')
+    await app.tool('wall')
     for (const [x, y] of points) await app.click(x, y)
     await app.key('Enter')
   }

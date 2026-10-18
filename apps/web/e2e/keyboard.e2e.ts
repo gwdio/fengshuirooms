@@ -6,27 +6,24 @@ describe('keyboard', () => {
   const app = useApp()
   beforeEach(() => app.reset())
 
-  it('switches tools with W and V', async () => {
+  it('V returns to Select from any tool; W/D/N are not shortcuts', async () => {
     assert.match(await app.pressed(), /Select/)
-    await app.key('w')
+    for (const k of ['w', 'd', 'n']) await app.key(k)
+    assert.match(await app.pressed(), /Select/)
+    await app.tool('wall')
     assert.match(await app.pressed(), /Wall/)
     await app.key('v')
     assert.match(await app.pressed(), /Select/)
   })
 
-  it('still works after clicking the canvas or a toolbar button', async () => {
+  it('still works after clicking the canvas, a toolbar button, or the panel', async () => {
     await app.click(100, 100)
-    await app.key('w')
-    assert.match(await app.pressed(), /Wall/)
+    await app.tool('door')
+    assert.match(await app.pressed(), /Door/)
     await app.page.click('button[title^="Select"]')
-    await app.key('w')
+    await app.tool('window')
     await app.key('v')
     assert.match(await app.pressed(), /Select/)
-  })
-
-  it('handles rapid switching', async () => {
-    for (const k of ['w', 'v', 'w', 'v', 'w']) await app.key(k)
-    assert.match(await app.pressed(), /Wall/)
   })
 
   it('toggles grid snap with G and inverts it while Shift is held', async () => {
@@ -41,7 +38,7 @@ describe('keyboard', () => {
   })
 
   it('Escape ends a chain first, then leaves the wall tool', async () => {
-    await app.key('w')
+    await app.tool('wall')
     await app.click(24, 24)
     await app.key('Escape')
     assert.match(await app.pressed(), /Wall/)

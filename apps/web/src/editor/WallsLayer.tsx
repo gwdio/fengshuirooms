@@ -4,8 +4,9 @@ import { Group, Layer, Line } from 'react-konva'
 import { useMeta } from '../doc/meta.ts'
 import { useEditorStore } from '../state/editorStore.ts'
 import { useSelection } from '../state/selectionStore.ts'
-import { getWalls, slideOpening, translateWalls, useWalls } from '../walls/walls.ts'
-import { previewWalls, setDrag, useEditDrag } from './drag.ts'
+import { deleteSegments, getWalls, slideOpening, translateWalls, useWalls } from '../walls/walls.ts'
+import { isOverCanvas } from './canvasElement.ts'
+import { pendingDeleteIds, previewWalls, setDrag, useEditDrag } from './drag.ts'
 import { LengthLabel } from './LengthLabel.tsx'
 import { snapSlide, snapWallTranslation } from './snapping.ts'
 import { setStageCursor } from './stageCursor.ts'
@@ -21,10 +22,9 @@ const BACKGROUND = '#ffffff'
 // from it, and its `name` on the group is the segment kind.
 
 export function WallsLayer() {
-  const walls = previewWalls(
-    useWalls(),
-    useEditDrag((s) => s.drag),
-  )
+  const drag = useEditDrag((s) => s.drag)
+  const walls = previewWalls(useWalls(), drag)
+  const deleting = pendingDeleteIds(drag)
   const { units } = useMeta()
   const selectedIds = useSelection((s) => s.selectedIds)
   const select = useSelection((s) => s.select)
@@ -49,7 +49,14 @@ export function WallsLayer() {
           )
         const Shape = wall.kind === 'wall' ? WallShape : OpeningShape
         return (
-          <Shape key={wall.id} wall={wall} units={units} selected={selected} onSelect={onSelect} />
+          <Shape
+            key={wall.id}
+            wall={wall}
+            units={units}
+            selected={selected}
+            deleting={deleting.includes(wall.id)}
+            onSelect={onSelect}
+          />
         )
       })}
     </Layer>
@@ -60,17 +67,21 @@ interface ShapeProps {
   wall: Wall
   units: Units
   selected: boolean
+  /** Dragged off the canvas: releasing will delete it. */
+  deleting: boolean
   onSelect: (additive: boolean) => void
 }
 
-function WallShape({ wall, units, selected, onSelect }: ShapeProps) {
+const DELETE_COLOR = '#dc2626'
+
+function WallShape({ wall, units, selected, deleting, onSelect }: ShapeProps) {
   const a = toScreen(wall.start)
   const b = toScreen(wall.end)
   return (
-    <Group name={wall.kind}>
+    <Group name={wall.kind} opacity={deleting ? 0.35 : 1}>
       <Line
         points={[a.x, a.y, b.x, b.y]}
-        stroke={selected ? SELECTED_COLOR : WALL_COLOR}
+        stroke={deleting ? DELETE_COLOR : selected ? SELECTED_COLOR : WALL_COLOR}
         strokeWidth={wall.thickness * PX_PER_INCH}
         lineCap="round"
         {...interaction(wall, onSelect)}
@@ -80,19 +91,25 @@ function WallShape({ wall, units, selected, onSelect }: ShapeProps) {
   )
 }
 
-function OpeningShape({ wall, units, selected, onSelect }: ShapeProps) {
+function OpeningShape({ wall, units, selected, deleting, onSelect }: ShapeProps) {
   const a = toScreen(wall.start)
   const b = toScreen(wall.end)
   const t = wall.thickness * PX_PER_INCH
   const len = Math.hypot(b.x - a.x, b.y - a.y)
   const d = { x: (b.x - a.x) / len, y: (b.y - a.y) / len }
   const n = { x: d.y, y: -d.x } // "left" of start→end on screen (y down)
-  const color = selected ? SELECTED_COLOR : wall.kind === 'window' ? WINDOW_COLOR : OPENING_COLOR
+  const color = deleting
+    ? DELETE_COLOR
+    : selected
+      ? SELECTED_COLOR
+      : wall.kind === 'window'
+        ? WINDOW_COLOR
+        : OPENING_COLOR
   const off = (p: Point, k: number) => [p.x + n.x * k, p.y + n.y * k]
   const jamb = (p: Point) => [...off(p, t / 2), ...off(p, -t / 2)]
 
   return (
-    <Group name={wall.kind}>
+    <Group name={wall.kind} opacity={deleting ? 0.5 : 1}>
       {/* The gap in the wall; also the hit target. */}
       <Line
         points={[a.x, a.y, b.x, b.y]}
@@ -164,6 +181,28 @@ function DoorSwing(props: {
   )
 }
 
+/**
+ * Keeps the drag's `outside` flag in sync with where the pointer really is. Konva stops reporting
+ * drag movement once the pointer leaves the stage, so it can't tell us when it comes back.
+ */
+let stopTrackingOutside = () => {}
+function trackOutside() {
+  stopTrackingOutside()
+  const onMove = (e: PointerEvent | MouseEvent) => {
+    const drag = useEditDrag.getState().drag
+    if (!drag || drag.kind === 'corner') return
+    const outside = !isOverCanvas({ x: e.clientX, y: e.clientY })
+    if (outside !== drag.outside) setDrag({ ...drag, outside })
+  }
+  window.addEventListener('mousemove', onMove, true)
+  window.addEventListener('pointermove', onMove, true)
+  stopTrackingOutside = () => {
+    window.removeEventListener('mousemove', onMove, true)
+    window.removeEventListener('pointermove', onMove, true)
+    stopTrackingOutside = () => {}
+  }
+}
+
 /** Pointer position at the last mousedown on a segment; the origin for drags. */
 let pressScreen: Point | null = null
 
@@ -197,27 +236,34 @@ function interaction(wall: Wall, onSelect: (additive: boolean) => void) {
         select(ids)
       }
       if (wall.kind !== 'wall' && ids.length === 1) {
-        setDrag({ kind: 'slide', id: wall.id, startScreen: start, center: null })
+        setDrag({ kind: 'slide', id: wall.id, startScreen: start, center: null, outside: false })
       } else {
-        setDrag({ kind: 'walls', ids, startScreen: start, snap: null })
+        setDrag({ kind: 'walls', ids, startScreen: start, snap: null, outside: false })
       }
+      trackOutside()
     },
     onDragMove: (e: Konva.KonvaEventObject<DragEvent>) => {
       const drag = useEditDrag.getState().drag
       const pos = e.target.getStage()?.getPointerPosition()
-      if (!drag || !pos) return
+      if (!drag || drag.kind === 'corner' || drag.outside || !pos) return
       if (drag.kind === 'walls') {
         setDrag({ ...drag, snap: snapWallTranslation(drag.ids, drag.startScreen, pos) })
-      } else if (drag.kind === 'slide') {
+      } else {
         const opening = getWalls().find((w) => w.id === drag.id)
         if (opening) setDrag({ ...drag, center: snapSlide(opening, drag.startScreen, pos) })
       }
     },
     onDragEnd: (e: Konva.KonvaEventObject<DragEvent>) => {
+      stopTrackingOutside()
       const drag = useEditDrag.getState().drag
       setDrag(null)
-      if (drag?.kind === 'walls' && drag.snap) translateWalls(drag.ids, drag.snap.delta)
-      if (drag?.kind === 'slide' && drag.center) slideOpening(drag.id, drag.center)
+      if (drag && drag.kind !== 'corner' && drag.outside) {
+        deleteSegments(drag.kind === 'walls' ? drag.ids : [drag.id])
+      } else if (drag?.kind === 'walls' && drag.snap) {
+        translateWalls(drag.ids, drag.snap.delta)
+      } else if (drag?.kind === 'slide' && drag.center) {
+        slideOpening(drag.id, drag.center)
+      }
       setStageCursor(e, 'default')
     },
     onMouseEnter: (e: Konva.KonvaEventObject<MouseEvent>) => setStageCursor(e, 'move'),

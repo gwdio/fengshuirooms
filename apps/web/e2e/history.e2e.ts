@@ -54,7 +54,7 @@ describe('undo / redo', () => {
   })
 
   it('undo mid-chain ends the chain instead of drawing from a removed corner', async () => {
-    await app.key('w')
+    await app.tool('wall')
     await app.click(24, 24)
     await app.click(96, 24)
     await undo()

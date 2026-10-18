@@ -12,7 +12,7 @@ describe('corner dragging', () => {
 
   it('shows handles only in the select tool', async () => {
     await app.assertHandlesOnCorners()
-    await app.key('w')
+    await app.tool('wall')
     // Layers are grid, walls, then handles (select tool only). Walls are draggable too, so only
     // look past the walls layer.
     const handles = await app.page.evaluate(() =>

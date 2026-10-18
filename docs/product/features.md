@@ -3,6 +3,16 @@
 Version tags: **V1** = Phases 1–3 (static site), **V2** = Phases 5–6 (backend), **V3** = Phase 7.
 Untagged items are V1. Which phase builds what lives in [the roadmap](../roadmap/README.md).
 
+## Elements panel and drag in / drag out
+
+- The left panel has an **Elements** tab (more tabs, e.g. furniture, later) listing Wall, Door, and
+  Window. **Click** an entry to pick its tool, or **drag** it onto the canvas to drop one in: doors and
+  windows onto the wall under the pointer, a wall as a 4′ segment at the drop point. Whatever is
+  dropped is selected. There are no letter hotkeys for these tools (V still returns to Select).
+- **Drag out = delete**: drag a wall, door, or window off the canvas. While it's armed, the item turns
+  faded red and the panel shows "Release to delete". Releasing deletes (doors/windows turn back into
+  wall); moving back onto the canvas first cancels.
+
 ## Room construction
 
 - Wall pen: click corners, or press-drag-release for a single wall; chains can stay open or close
@@ -25,7 +35,8 @@ Untagged items are V1. Which phase builds what lives in [the roadmap](../roadmap
 
 Doors and windows are segments of the wall itself ([ADR-0013](../decisions/0013-openings-as-wall-segments.md)).
 
-- Door (D) and Window (N) tools: hover a wall to preview, click to cut the opening in (36" default).
+- Door and Window (elements panel): click to pick the tool, then hover a wall to preview and click to
+  cut the opening in (36" default), or drag one straight onto a wall.
   It fits itself inside the wall near an end; walls shorter than the opening are skipped.
 - Doors show their leaf and swing arc. Flip hinge / Flip swing are in the properties panel.
 - Drag a door or window to slide it along its wall. Drag its corner to resize it along the wall.

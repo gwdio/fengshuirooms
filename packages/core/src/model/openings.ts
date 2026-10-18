@@ -150,3 +150,14 @@ function sameLine(w: Wall, o: Wall): boolean {
   const onLine = (p: Point) => distance(p, projectOntoLine(p, o.start, o.end)) < 1e-6
   return onLine(w.start) && onLine(w.end)
 }
+
+/**
+ * Deletes segments the way the user expects: plain walls are removed, doors and windows turn back
+ * into wall (normalize afterwards to rejoin them).
+ */
+export function deleteSegments(walls: readonly Wall[], ids: readonly string[]): readonly Wall[] {
+  const target = new Set(ids)
+  const openingIds = walls.filter((w) => target.has(w.id) && isOpening(w)).map((w) => w.id)
+  const plainIds = new Set(walls.filter((w) => target.has(w.id) && !isOpening(w)).map((w) => w.id))
+  return openingsToWalls(walls, openingIds).filter((w) => !plainIds.has(w.id))
+}

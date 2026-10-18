@@ -7,7 +7,7 @@ describe('wall pen', () => {
   beforeEach(() => app.reset())
 
   it('draws a chain of clicks on the grid and closes on the start point', async () => {
-    await app.key('w')
+    await app.tool('wall')
     for (const [x, y] of [
       [25, 25],
       [85, 25],
@@ -21,7 +21,7 @@ describe('wall pen', () => {
   })
 
   it('draws a wall by dragging, and a following click continues from its end', async () => {
-    await app.key('w')
+    await app.tool('wall')
     await app.drag(125, 25, 175, 25)
     assert.deepEqual(await app.walls(), ['120,24,180,24'])
     await app.click(175, 75)
@@ -29,7 +29,7 @@ describe('wall pen', () => {
   })
 
   it('Enter and double-click end the chain', async () => {
-    await app.key('w')
+    await app.tool('wall')
     await app.click(24, 24)
     await app.click(72, 24)
     await app.key('Enter')
@@ -44,7 +44,7 @@ describe('wall pen', () => {
   })
 
   it('Backspace removes the last wall of the chain', async () => {
-    await app.key('w')
+    await app.tool('wall')
     for (const [x, y] of [
       [24, 96],
       [72, 96],
@@ -57,7 +57,7 @@ describe('wall pen', () => {
   })
 
   it('holding Shift places free points rounded to the inch', async () => {
-    await app.key('w')
+    await app.tool('wall')
     await app.page.keyboard.down('Shift')
     await app.click(25.25, 150.25)
     await app.click(50.75, 150.25)

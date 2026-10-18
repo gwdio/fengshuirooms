@@ -25,21 +25,6 @@ export function useEditorShortcuts() {
       run: () => useEditorStore.getState().setTool('select'),
     },
     {
-      keys: ['w'],
-      description: 'Wall tool',
-      run: () => useEditorStore.getState().setTool('wall'),
-    },
-    {
-      keys: ['d'],
-      description: 'Door tool',
-      run: () => useEditorStore.getState().setTool('door'),
-    },
-    {
-      keys: ['n'],
-      description: 'Window tool',
-      run: () => useEditorStore.getState().setTool('window'),
-    },
-    {
       keys: ['g'],
       description: 'Toggle grid snap',
       run: () => useEditorStore.getState().toggleSnapToGrid(),

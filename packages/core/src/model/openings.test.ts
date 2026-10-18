@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { readSnapshot } from '../doc/snapshot.ts'
 import type { Point, Wall } from './entities.ts'
-import { flipDoor, openingsToWalls, placeOpening, slideOpening } from './openings.ts'
+import {
+  deleteSegments,
+  flipDoor,
+  openingsToWalls,
+  placeOpening,
+  slideOpening,
+} from './openings.ts'
 import { createWall, normalizeWalls, wallCollection } from './walls.ts'
 
 const a = { x: 0, y: 0 }
@@ -125,5 +131,18 @@ describe('walls collection v2', () => {
     const door = { id: 'd', kind: 'door', start: a, end: b, thickness: 4.5 }
     expect(wallCollection.parse(door)).toMatchObject({ hinge: 'start', swing: 'left' })
     expect(wallCollection.parse({ ...door, kind: 'portal' })).toBeUndefined()
+  })
+})
+
+describe('deleteSegments', () => {
+  it('removes plain walls and turns openings back into wall', () => {
+    const host = wall(a, b)
+    const other = wall({ x: 0, y: 50 }, { x: 60, y: 50 })
+    const out = placeOpening([host, other], host.id, { x: 60, y: 0 }, 'door')!
+    const door = out.find((w) => w.kind === 'door')!
+    const result = deleteSegments(out, [door.id, other.id])
+    expect(result.map((w) => w.kind)).toEqual(['wall', 'wall', 'wall'])
+    expect(result.some((w) => w.id === other.id)).toBe(false)
+    expect(normalizeWalls(result).walls).toHaveLength(1)
   })
 })

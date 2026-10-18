@@ -10,7 +10,7 @@ describe('doors and windows', () => {
   })
 
   it('a door dropped on a wall splits it into wall | door | wall', async () => {
-    await app.key('d')
+    await app.tool('door')
     await app.click(70, 97)
     assert.deepEqual(await app.segments(), [
       'door:54,96,90,96',
@@ -23,17 +23,17 @@ describe('doors and windows', () => {
   })
 
   it('fits the opening inside the wall near an end, and ignores walls too short', async () => {
-    await app.key('n')
+    await app.tool('window')
     await app.click(15, 96)
     assert.deepEqual(await app.segments(), ['wall:48,96,132,96', 'window:12,96,48,96'])
     await app.drawChain([12, 144], [36, 144]) // 2', shorter than a 3' window
-    await app.key('n')
+    await app.tool('window')
     await app.click(24, 144)
     assert.ok((await app.segments()).includes('wall:12,144,36,144'))
   })
 
   it('deleting a door turns it back into wall, rejoining the wall', async () => {
-    await app.key('d')
+    await app.tool('door')
     await app.click(72, 96)
     await app.key('v')
     await app.click(72, 96)
@@ -43,15 +43,15 @@ describe('doors and windows', () => {
   })
 
   it('undo removes a placed door in one step', async () => {
-    await app.key('w')
-    await app.key('n')
+    await app.tool('wall')
+    await app.tool('window')
     await app.click(72, 96)
     await app.chord('Control+z')
     assert.deepEqual(await app.segments(), ['wall:12,96,132,96'])
   })
 
   it('dragging a door slides it along its wall and stops at the end', async () => {
-    await app.key('d')
+    await app.tool('door')
     await app.click(72, 96)
     await app.key('v')
     await app.drag(72, 96, 96, 110) // perpendicular part is ignored
@@ -60,13 +60,13 @@ describe('doors and windows', () => {
       'wall:114,96,132,96',
       'wall:12,96,78,96',
     ])
-    await app.drag(96, 96, 250, 96) // well past the end of the wall
+    await app.drag(96, 96, 200, 96) // well past the end of the wall, still on the canvas
     assert.ok((await app.segments()).includes('door:96,96,132,96'))
     await app.assertHandlesOnCorners()
   })
 
   it("dragging a door's corner resizes it along the wall instead of bending it", async () => {
-    await app.key('d')
+    await app.tool('door')
     await app.click(72, 96)
     await app.key('v')
     await app.drag(90, 96, 100, 120) // snaps to x=96; the y part is ignored
@@ -78,7 +78,7 @@ describe('doors and windows', () => {
   })
 
   it('door hinge and swing flips are saved', async () => {
-    await app.key('d')
+    await app.tool('door')
     await app.click(72, 96)
     await app.key('v')
     await app.click(72, 96)
@@ -94,7 +94,7 @@ describe('doors and windows', () => {
   })
 
   it('a wall drawn from a door does not cut the door', async () => {
-    await app.key('d')
+    await app.tool('door')
     await app.click(72, 96)
     await app.drawChain([72, 96], [72, 150])
     assert.ok((await app.segments()).includes('door:54,96,90,96'))

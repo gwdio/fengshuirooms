@@ -43,6 +43,14 @@ later sync need no special cases. Shortcuts: Mod+Z, Mod+Shift+Z, Mod+Y; Undo/Red
 show the label of what they'll do. Give every commit a `label` (`commitCollection(name, next, { label })`).
 One action is one batch: drags commit once on drop.
 
+## Elements panel
+
+`panels/ElementsPanel.tsx` + `editor/palette.ts` (the entries) + `state/paletteDrag.ts` (the drag).
+Pointer events, not HTML5 drag-and-drop, so mouse and touch behave the same and browser tests can
+drive it. A press that barely moves is a click (pick the tool); otherwise releasing over the canvas
+calls the entry's `drop`, and the canvas shows the entry's `ghost` meanwhile. New droppable kinds
+(furniture) are new `PaletteEntry`s.
+
 ## Persistence
 
 `persistence/engine.ts`. On start it restores local settings and the last document (via core's
@@ -80,6 +88,14 @@ Preview and commit use the same core function, so what you see is what you get.
 Draggable Konva nodes whose position comes from props must be put back on drag end
 (`e.target.position(...)`). Konva moves the node itself, and if the drop leaves the prop value
 unchanged, React won't reset it, leaving a node displayed somewhere it doesn't belong.
+
+**Never unmount a Konva node while it's being dragged.** Konva ends the drag immediately (a
+`dragend` with no mouse-up). Show "pending" states by restyling the node instead. Drag-out deletion
+renders the dragged items faded red rather than removing them from the preview.
+
+Konva also stops reporting drag movement once the pointer leaves the stage. Code that needs to know
+where the pointer is outside the canvas (drag-out) uses its own window listener for the duration of
+the drag.
 
 Don't use Konva's `dblclick`: it fires for any two clicks within 400ms, even far apart. Detect
 "same spot again" by position instead.

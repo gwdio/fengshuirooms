@@ -45,7 +45,13 @@ describe('docStore', () => {
   })
 
   it('cancels a drag when its walls change remotely, but not for local edits', () => {
-    setDrag({ kind: 'walls', ids: [w1.id], startScreen: { x: 0, y: 0 }, snap: null })
+    setDrag({
+      kind: 'walls',
+      ids: [w1.id],
+      startScreen: { x: 0, y: 0 },
+      snap: null,
+      outside: false,
+    })
     commitCollection(W, [w1, { ...w2, thickness: 6 }])
     expect(useEditDrag.getState().drag).not.toBeNull()
     applyBatch({ origin: 'remote', changes: [{ collection: W, id: w1.id, value: { ...w1 } }] })

@@ -2,11 +2,14 @@ import { useEffect, useRef, useState } from 'react'
 import { Layer, Line, Stage } from 'react-konva'
 import { useEditorStore } from '../state/editorStore.ts'
 import { useSelection } from '../state/selectionStore.ts'
+import { usePaletteDrag } from '../state/paletteDrag.ts'
+import { clientToStage, isOverCanvas, setCanvasElement } from './canvasElement.ts'
 import { CornerHandles } from './CornerHandles.tsx'
+import { PALETTE } from './palette.ts'
 import { useOpeningTool } from './useOpeningTool.tsx'
 import { useWallPen } from './useWallPen.tsx'
 import { WallsLayer } from './WallsLayer.tsx'
-import { GRID_INCHES, PX_PER_INCH } from './viewport.ts'
+import { GRID_INCHES, PX_PER_INCH, toScreen } from './viewport.ts'
 
 export function EditorCanvas() {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -22,6 +25,7 @@ export function EditorCanvas() {
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
+    setCanvasElement(el)
     const observer = new ResizeObserver(([entry]) => {
       if (!entry) return
       setSize({ width: entry.contentRect.width, height: entry.contentRect.height })
@@ -67,7 +71,30 @@ export function EditorCanvas() {
         {tool === 'select' && <CornerHandles />}
         {pen.preview}
         {opening.preview}
+        <PaletteGhost />
       </Stage>
     </div>
+  )
+}
+
+/** Preview of what a drag from the elements panel would drop, while it's over the canvas. */
+function PaletteGhost() {
+  const drag = usePaletteDrag((s) => s.drag)
+  if (!drag?.dragging || !isOverCanvas(drag.client)) return null
+  const stage = clientToStage(drag.client)
+  const ghost = stage && PALETTE.find((p) => p.id === drag.entryId)?.ghost(stage)
+  if (!ghost) return null
+  const a = toScreen(ghost.start)
+  const b = toScreen(ghost.end)
+  return (
+    <Layer listening={false}>
+      <Line
+        points={[a.x, a.y, b.x, b.y]}
+        stroke="#0f766e"
+        opacity={0.5}
+        strokeWidth={ghost.thickness * PX_PER_INCH + 4}
+        lineCap="round"
+      />
+    </Layer>
   )
 }

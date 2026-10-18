@@ -1,8 +1,7 @@
 import {
   createWall,
   flipDoor as flipDoorIn,
-  isOpening,
-  openingsToWalls,
+  deleteSegments as deleteSegmentsIn,
   placeOpening as placeOpeningIn,
   slideOpening as slideOpeningIn,
   type OpeningKind,
@@ -68,11 +67,9 @@ export function deleteSegments(ids: readonly string[]): void {
   const walls = getWalls()
   const chosen = walls.filter((w) => ids.includes(w.id))
   if (chosen.length === 0) return
-  const openingIds = chosen.filter(isOpening).map((w) => w.id)
-  const wallIds = chosen.filter((w) => !isOpening(w)).map((w) => w.id)
   const label =
     chosen.length === 1 ? `Delete ${NAMES[chosen[0]!.kind]}` : `Delete ${chosen.length} items`
-  commitWalls(removeWallsFrom(openingsToWalls(walls, openingIds), wallIds), label)
+  commitWalls(deleteSegmentsIn(walls, ids), label)
 }
 
 /** Cuts a door or window into wall `hostId` near `center`. Returns the new opening's id. */

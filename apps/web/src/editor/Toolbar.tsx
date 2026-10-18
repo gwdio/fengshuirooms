@@ -2,22 +2,15 @@ import { redo, undo, useHistory } from '../doc/history.ts'
 import { useHeldKey } from '../input/useKeyboard.ts'
 import { useEditorStore, type Tool } from '../state/editorStore.ts'
 
-const TOOLS: { id: Tool; label: string; key: string; hint: string }[] = [
-  {
-    id: 'select',
-    label: 'Select',
-    key: 'V',
-    hint: 'Click to select · drag a wall to move it on its own · drag a door/window to slide it · drag a corner to move every wall there (only the selected ones, if any) · Delete removes (doors/windows become wall)',
-  },
-  {
-    id: 'wall',
-    label: 'Wall',
-    key: 'W',
-    hint: 'Click corners or drag a wall · start or end on any wall · click the start to close · double-click / Enter to finish · Backspace undoes last wall · Esc exits',
-  },
-  { id: 'door', label: 'Door', key: 'D', hint: 'Click a wall to add a door · Esc exits' },
-  { id: 'window', label: 'Window', key: 'N', hint: 'Click a wall to add a window · Esc exits' },
-]
+// Wall, door, and window are picked from the elements panel; the toolbar keeps Select and
+// explains whatever tool is active.
+const HINTS: Record<Tool, string> = {
+  select:
+    'Click to select · drag a wall to move it on its own · drag a door/window to slide it · drag a corner to move every wall there (only the selected ones, if any) · Delete or drag off the canvas removes (doors/windows become wall)',
+  wall: 'Click corners or drag a wall · start or end on any wall · click the start to close · double-click / Enter to finish · Backspace undoes last wall · Esc exits',
+  door: 'Click a wall to add a door · Esc exits',
+  window: 'Click a wall to add a window · Esc exits',
+}
 
 export function Toolbar() {
   const tool = useEditorStore((s) => s.tool)
@@ -26,28 +19,23 @@ export function Toolbar() {
   const toggleSnapToGrid = useEditorStore((s) => s.toggleSnapToGrid)
   // What snapping will actually do right now, with Shift's inversion applied.
   const gridActive = snapToGrid !== useHeldKey('Shift')
-  const hint = TOOLS.find((t) => t.id === tool)?.hint
+  const hint = HINTS[tool]
 
   return (
     <div className="flex min-w-0 items-center gap-3">
-      <div className="flex shrink-0 gap-1">
-        {TOOLS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            title={`${t.label} (${t.key})`}
-            aria-pressed={tool === t.id}
-            onClick={() => setTool(t.id)}
-            className={`rounded border px-2 py-1 text-sm ${
-              tool === t.id
-                ? 'border-teal-700 bg-teal-700 text-white'
-                : 'border-gray-300 hover:bg-gray-100'
-            }`}
-          >
-            {t.label} <span className="opacity-60">{t.key}</span>
-          </button>
-        ))}
-      </div>
+      <button
+        type="button"
+        title="Select (V)"
+        aria-pressed={tool === 'select'}
+        onClick={() => setTool('select')}
+        className={`shrink-0 rounded border px-2 py-1 text-sm ${
+          tool === 'select'
+            ? 'border-teal-700 bg-teal-700 text-white'
+            : 'border-gray-300 hover:bg-gray-100'
+        }`}
+      >
+        Select <span className="opacity-60">V</span>
+      </button>
       <button
         type="button"
         title="Snap to grid (G to toggle, hold Shift to invert)"
