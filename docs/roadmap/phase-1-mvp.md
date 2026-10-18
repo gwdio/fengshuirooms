@@ -26,6 +26,7 @@ Suggested order — each item is roughly one PR:
 - [x] Selected walls detach: dragging a wall (or a selected wall's corner) moves only the selection
 - [x] Junctions split automatically: a wall ending on another wall splits it into two at that point
 - [x] Inline walls merge automatically: end-to-end, same direction, nothing else at the corner
+- [x] Overlapping walls merge: a wall dropped onto a parallel wall snaps into line and joins it
 - [ ] Insert/delete points on walls
 - [ ] Doors on walls with swing arc (hinge side, in/out) (deferred by owner; not in the MVP for now)
 - [ ] Windows on walls with width (deferred by owner; not in the MVP for now)

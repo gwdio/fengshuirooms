@@ -106,4 +106,33 @@ describe('wall dragging, detaching, splitting, merging', () => {
     assert.deepEqual(await app.walls(), ['12,96,132,96'])
     await app.assertHandlesOnCorners()
   })
+
+  it('a wall dragged onto a parallel wall merges into one spanning both', async () => {
+    await app.drawChain([12, 96], [96, 96])
+    await app.drawChain([72, 120], [144, 120])
+    await app.key('v')
+    await app.drag(108, 120, 108, 96)
+    assert.deepEqual(await app.walls(), ['12,96,144,96'])
+    await app.assertHandlesOnCorners()
+    assert.match(await app.selectionLabel(), /1 selected/) // selection follows the merge
+  })
+
+  it('a parallel wall dropped near (grid off) snaps exactly onto the line and merges', async () => {
+    await app.drawChain([12, 96], [96, 96])
+    await app.drawChain([24, 120], [60, 120])
+    await app.key('v')
+    await app.page.keyboard.down('Shift')
+    await app.drag(40, 120, 40.5, 97.25) // lands ~1.25" off the line
+    await app.page.keyboard.up('Shift')
+    assert.deepEqual(await app.walls(), ['12,96,96,96'])
+  })
+
+  it('a wall dropped on top of a wall that has a junction keeps the junction as a corner', async () => {
+    await app.drawChain([12, 96], [132, 96])
+    await app.drawChain([60, 97], [60, 144]) // stub splits the long wall at x=60
+    await app.drawChain([24, 60], [48, 60])
+    await app.key('v')
+    await app.drag(36, 60, 36, 96) // onto the left piece
+    assert.deepEqual(await app.walls(), ['12,96,60,96', '60,96,132,96', '60,96,60,144'])
+  })
 })

@@ -191,15 +191,84 @@ function inline(a: Wall, b: Wall, corner: Point): boolean {
 }
 
 /**
- * Canonical form after a local edit: junctions become corners, then inline pairs that no longer
- * need a corner are joined. `replaced` maps removed wall ids to the wall that absorbed them.
- * Only run on local edits; remote changes are applied as-is (ADR-0011).
+ * Joins walls that lie on top of each other: on the same line, overlapping by more than a point,
+ * with equal thickness. The result spans both. The earlier wall keeps its id; `replaced` maps each
+ * absorbed id to it.
+ */
+export function mergeOverlappingWalls(walls: readonly Wall[]): {
+  walls: readonly Wall[]
+  replaced: Map<string, string>
+} {
+  const replaced = new Map<string, string>()
+  let current = walls
+  for (;;) {
+    const pair = findOverlappingPair(current)
+    if (!pair) break
+    const [keep, drop] = pair
+    const merged = { ...keep, ...span(keep, drop) }
+    current = current.filter((w) => w.id !== drop.id).map((w) => (w.id === keep.id ? merged : w))
+    for (const [from, to] of replaced) if (to === drop.id) replaced.set(from, keep.id)
+    replaced.set(drop.id, keep.id)
+  }
+  return { walls: current, replaced }
+}
+
+function findOverlappingPair(walls: readonly Wall[]): [Wall, Wall] | undefined {
+  for (let i = 0; i < walls.length; i++) {
+    for (let j = i + 1; j < walls.length; j++) {
+      const a = walls[i]!
+      const b = walls[j]!
+      if (a.thickness === b.thickness && overlapsOnLine(a, b)) return [a, b]
+    }
+  }
+  return undefined
+}
+
+/** Position of `p` along `w`'s direction, in inches from `w.start`. */
+function along(w: Wall, p: Point): number {
+  const len = wallLength(w)
+  return (
+    ((p.x - w.start.x) * (w.end.x - w.start.x) + (p.y - w.start.y) * (w.end.y - w.start.y)) / len
+  )
+}
+
+function overlapsOnLine(a: Wall, b: Wall): boolean {
+  const onLine = (p: Point) =>
+    distance(p, closestPointOnLine(p, a.start, a.end)) <= JUNCTION_EPSILON
+  if (!onLine(b.start) || !onLine(b.end)) return false
+  const [b0, b1] = [along(a, b.start), along(a, b.end)].sort((x, y) => x - y) as [number, number]
+  return Math.min(wallLength(a), b1) - Math.max(0, b0) > JUNCTION_EPSILON
+}
+
+function closestPointOnLine(p: Point, a: Point, b: Point): Point {
+  const dx = b.x - a.x
+  const dy = b.y - a.y
+  const t = ((p.x - a.x) * dx + (p.y - a.y) * dy) / (dx * dx + dy * dy)
+  return { x: a.x + t * dx, y: a.y + t * dy }
+}
+
+/** The two extreme endpoints of collinear walls, as copies of existing points (exact coordinates). */
+function span(a: Wall, b: Wall): { start: Point; end: Point } {
+  const points = [a.start, a.end, b.start, b.end].sort((p, q) => along(a, p) - along(a, q))
+  return { start: { ...points[0]! }, end: { ...points[3]! } }
+}
+
+/**
+ * Canonical form after a local edit: walls lying on top of each other are joined, junctions become
+ * corners, then inline pairs that no longer need a corner are joined. `replaced` maps removed wall
+ * ids to the wall that absorbed them. Only run on local edits; remote changes are applied as-is
+ * (ADR-0011).
  */
 export function normalizeWalls(walls: readonly Wall[]): {
   walls: readonly Wall[]
   replaced: Map<string, string>
 } {
-  return mergeCollinearWalls(splitWallsAtJunctions(walls))
+  const overlap = mergeOverlappingWalls(walls)
+  const inline = mergeCollinearWalls(splitWallsAtJunctions(overlap.walls))
+  const replaced = new Map(overlap.replaced)
+  for (const [from, to] of replaced) replaced.set(from, inline.replaced.get(to) ?? to)
+  for (const [from, to] of inline.replaced) replaced.set(from, to)
+  return { walls: inline.walls, replaced }
 }
 
 export const wallCollection: CollectionSpec<Wall> = {

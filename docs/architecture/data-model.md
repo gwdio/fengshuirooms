@@ -28,8 +28,9 @@ Changes are batches of `{ collection, id, value | null }` with an origin (`local
   `rotation` is degrees clockwise.
 - **Walls** are straight segments, never curved. Connected walls share exact endpoint coordinates
   (the pen snaps to existing endpoints and rounds to 1"), so "same corner" means equal `x`/`y`.
-  Local edits are normalized before commit: no endpoint lies strictly inside another wall (it gets
-  split there), and no two inline walls meet at an otherwise bare corner (they get merged). There is
+  Local edits are normalized before commit: no two walls overlap on a line (they get merged), no
+  endpoint lies strictly inside another wall (it gets split there), and no two inline walls meet at
+  an otherwise bare corner (they get merged). There is
   no separate corner/vertex entity ([ADR-0010](../decisions/0010-walls-as-segments.md)).
 - **IDs** are `crypto.randomUUID()` strings. Entities refer to each other by id, and **a reference may
   dangle** (a peer deleted the target). Readers must cope.

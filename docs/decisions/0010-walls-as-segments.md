@@ -1,7 +1,7 @@
 # 0010. Walls are independent straight segments
 
 - **Status**: Accepted
-- **Date**: 2026-10-17 (amended same day: junctions split, inline walls merge)
+- **Date**: 2026-10-17 (amended same day: junctions split, inline and overlapping walls merge)
 - **Revisit**: when corner dragging is built, if coordinate-matching gets fiddly
 
 ## Context
@@ -18,10 +18,13 @@ and rounds everything else to whole inches, so equality checks are reliable.
 
 **Walls are kept in canonical form.** After every local wall edit, the walls feature (`apps/web/src/walls/walls.ts`) runs `normalizeWalls` before committing:
 
-1. `splitWallsAtJunctions`: any wall with another wall's endpoint strictly inside it is split
+1. `mergeOverlappingWalls`: walls lying on top of each other (same line, overlapping by more than a
+   point, equal thickness) become one wall spanning both. Wall drags snap onto the line of a nearby
+   parallel wall so that dropping one wall onto another lands exactly in line.
+2. `splitWallsAtJunctions`: any wall with another wall's endpoint strictly inside it is split
    there (the first piece keeps the original id). A wall started from the middle of another gives
    three walls meeting at one shared corner, which then behaves like any other corner.
-2. `mergeCollinearWalls`: two walls that meet end-to-end in a straight line, at a corner no other
+3. `mergeCollinearWalls`: two walls that meet end-to-end in a straight line, at a corner no other
    wall touches, with equal thickness, are joined into one. This undoes splits once the wall that
    caused them moves away, and turns collinear pen clicks into a single wall.
 
@@ -44,4 +47,3 @@ and rounds everything else to whole inches, so equality checks are reliable.
 - There's no way to keep a deliberate corner in a straight wall (e.g. to put a door on one half):
   it merges as soon as nothing else touches it.
 - Walls that cross in an X (no endpoint on the other wall) are not split.
-- Overlapping or duplicate walls aren't prevented.

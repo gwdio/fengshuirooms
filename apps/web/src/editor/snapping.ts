@@ -47,16 +47,17 @@ export function snapWallTranslation(
   screen: Point,
 ): TranslationSnap {
   const moving = new Set(movingWallIds)
-  const movingPoints = getWalls()
-    .filter((w) => moving.has(w.id))
-    .flatMap((w) => [w.start, w.end])
+  const movingWalls = getWalls().filter((w) => moving.has(w.id))
+  const fixed = fixedWalls(movingWallIds)
   const a = toWorld(startScreen)
   const b = toWorld(screen)
   return snapTranslation(
-    movingPoints,
+    movingWalls.flatMap((w) => [w.start, w.end]),
     { x: b.x - a.x, y: b.y - a.y },
     {
-      endpoints: endpointsOf(fixedWalls(movingWallIds)),
+      endpoints: endpointsOf(fixed),
+      // Lets a wall dropped onto a parallel wall land exactly in line, so the two merge.
+      lines: { moving: movingWalls, fixed },
       radius: screenToWorldDistance(SNAP_RADIUS_PX),
       grid: gridStep(),
       precision: 1,

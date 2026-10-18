@@ -15,7 +15,8 @@ Untagged items are V1. Which phase builds what lives in [the roadmap](../roadmap
   corner to merge), drag walls (only the selection moves, detaching from neighbours; a selected
   wall's corners also detach), insert/delete points (not yet)
 - Walls that meet partway along another wall split it, so every junction is a normal corner; walls
-  that meet end-to-end in a straight line (nothing else at that corner) merge into one
+  that meet end-to-end in a straight line (nothing else at that corner) merge into one, and a wall
+  dropped on top of a parallel wall merges with it
 - Templates for common shapes: rectangle, L-shape, studio with alcove
 - **Floorplan image import** — upload PNG/PDF, scale by dragging over a known dimension, trace walls
   over it. The image stays as a reference layer.

@@ -76,3 +76,59 @@ describe('snapTranslation', () => {
     })
   })
 })
+
+describe('snapTranslation onto parallel lines', () => {
+  const fixed = { start: { x: 0, y: 0 }, end: { x: 120, y: 0 } }
+  const moving = { start: { x: 30, y: 20 }, end: { x: 90, y: 20 } }
+  const base = { endpoints: [], radius: 3, precision: 1 }
+  const lines = { moving: [moving], fixed: [fixed] }
+
+  it('lands a parallel wall exactly on the line, rounding along it', () => {
+    const r = snapTranslation([moving.start, moving.end], { x: 5.4, y: -18.5 }, { ...base, lines })
+    expect(r).toEqual({ delta: { x: 5, y: -20 }, line: fixed })
+  })
+
+  it('rounds along the line to the grid when it is on', () => {
+    const r = snapTranslation(
+      [moving.start, moving.end],
+      { x: 5.4, y: -18.5 },
+      { ...base, grid: 12, lines },
+    )
+    expect(r.delta).toEqual({ x: 0, y: -20 })
+  })
+
+  it('works on diagonal lines', () => {
+    const f = { start: { x: 0, y: 0 }, end: { x: 100, y: 100 } }
+    const m = { start: { x: 20, y: 22 }, end: { x: 50, y: 52 } } // ~1.4" off the line
+    const r = snapTranslation(
+      [m.start, m.end],
+      { x: 1, y: 0 },
+      { ...base, lines: { moving: [m], fixed: [f] } },
+    )
+    expect(r.line).toBe(f)
+    const s = { x: m.start.x + r.delta.x, y: m.start.y + r.delta.y }
+    expect(s.x).toBeCloseTo(s.y)
+  })
+
+  it('ignores lines that are far, not parallel, or not overlapping', () => {
+    const far = snapTranslation([moving.start], { x: 0, y: -10 }, { ...base, lines })
+    expect(far.line).toBeUndefined()
+    const off = { moving: [{ start: { x: 300, y: 1 }, end: { x: 400, y: 1 } }], fixed: [fixed] }
+    expect(snapTranslation([], { x: 0, y: -1 }, { ...base, lines: off }).line).toBeUndefined()
+    const tilted = { moving: [{ start: { x: 30, y: 2 }, end: { x: 90, y: 4 } }], fixed: [fixed] }
+    expect(snapTranslation([], { x: 0, y: -1 }, { ...base, lines: tilted }).line).toBeUndefined()
+  })
+
+  it('prefers a corner snap over a line snap', () => {
+    const r = snapTranslation(
+      [moving.start, moving.end],
+      { x: -29, y: -19 },
+      {
+        ...base,
+        endpoints: [{ x: 0, y: 0 }],
+        lines,
+      },
+    )
+    expect(r.corner).toEqual({ x: 0, y: 0 })
+  })
+})

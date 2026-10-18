@@ -4,6 +4,7 @@ import {
   createWall,
   endpointsOf,
   mergeCollinearWalls,
+  mergeOverlappingWalls,
   moveCorner,
   normalizeWalls,
   removeWalls,
@@ -178,5 +179,53 @@ describe('wallCollection.parse', () => {
     ['not an object', 'wall'],
   ])('rejects %s', (_, raw) => {
     expect(wallCollection.parse(raw)).toBeUndefined()
+  })
+})
+
+describe('mergeOverlappingWalls', () => {
+  it('joins a wall lying on top of another into one spanning both', () => {
+    const host = wall(a, { x: 96, y: 0 })
+    const dropped = wall({ x: 48, y: 0 }, b) // overlaps 48..96, extends to 120
+    const { walls, replaced } = mergeOverlappingWalls([host, dropped])
+    expect(walls).toEqual([{ ...host, start: a, end: b }])
+    expect(replaced.get(dropped.id)).toBe(host.id)
+  })
+  it('absorbs a wall fully inside another, either direction', () => {
+    const host = wall(a, b)
+    const inside = wall({ x: 90, y: 0 }, { x: 30, y: 0 })
+    expect(mergeOverlappingWalls([host, inside]).walls).toEqual([host].map((w) => ({ ...w })))
+  })
+  it('joins exact duplicates and diagonal overlaps', () => {
+    expect(mergeOverlappingWalls([wall(a, b), wall(b, a)]).walls).toHaveLength(1)
+    const d = mergeOverlappingWalls([
+      wall(a, { x: 60, y: 60 }),
+      wall({ x: 30, y: 30 }, { x: 90, y: 90 }),
+    ])
+    expect(d.walls).toMatchObject([{ start: a, end: { x: 90, y: 90 } }])
+  })
+  it('leaves parallel-but-apart, end-to-end, crossing, and mixed-thickness walls alone', () => {
+    for (const l of [
+      [wall(a, b), wall({ x: 0, y: 6 }, { x: 120, y: 6 })],
+      [wall(a, { x: 60, y: 0 }), wall({ x: 60, y: 0 }, b)],
+      [wall(a, b), wall({ x: 60, y: -10 }, { x: 60, y: 10 })],
+      [wall(a, b), wall({ x: 30, y: 0 }, { x: 90, y: 0 }, 8)],
+    ]) {
+      expect(mergeOverlappingWalls(l).replaced.size).toBe(0)
+    }
+  })
+})
+
+describe('normalizeWalls with overlaps', () => {
+  it('re-splits the merged wall where other walls meet it, and maps ids through both steps', () => {
+    const host = wall(a, b)
+    const stub = wall({ x: 30, y: 0 }, { x: 30, y: 40 })
+    const dropped = wall({ x: 60, y: 0 }, { x: 150, y: 0 })
+    const { walls, replaced } = normalizeWalls([host, stub, dropped])
+    const straight = walls.filter((w) => w.start.y === 0 && w.end.y === 0)
+    expect(straight.map((w) => [w.start.x, w.end.x].sort((p, q) => p - q))).toEqual([
+      [0, 30],
+      [30, 150],
+    ])
+    expect(walls.map((w) => w.id)).toContain(replaced.get(dropped.id))
   })
 })
