@@ -2,7 +2,7 @@
 
 ## Status
 
-**Current phase: [Phase 1 — MVP](phase-1-mvp.md)** · Phase 0 done except confirming CI on GitHub. Phases 1–3 are local-only; nothing is deployed before Phase 4.
+**Current phase: [Phase 1 — MVP](phase-1-mvp.md)** · Phase 0 done. Phases 1–3 are local-only; nothing is deployed before Phase 4.
 
 Update this line whenever a phase closes.
 

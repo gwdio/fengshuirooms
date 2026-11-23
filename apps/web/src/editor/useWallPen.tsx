@@ -12,6 +12,7 @@ import { addWall, removeWalls, useWalls } from '../walls/walls.ts'
 import { PreviewSegment } from './PreviewSegment.tsx'
 import { SnapMarker } from './SnapMarker.tsx'
 import { snapScreenPoint } from './snapping.ts'
+import { useViewport } from './viewport.ts'
 
 /** Pointer travel (px) between press and release that turns a click into a drag. */
 const DRAG_THRESHOLD_PX = 4
@@ -141,6 +142,7 @@ export function useWallPen(active: boolean, onExit: () => void) {
   const { chain, press, hover } = usePen()
   const { units } = useMeta()
   useWalls() // re-snap the cursor when walls change
+  useViewport()
   // Subscribed only so the cursor re-snaps when these change; resolve() reads them directly.
   useEditorStore((s) => s.snapToGrid)
   useHeldKey('Shift')

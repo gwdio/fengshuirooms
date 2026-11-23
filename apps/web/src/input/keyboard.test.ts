@@ -25,6 +25,12 @@ describe('parseChord', () => {
     expect(parseChord('Mod+Shift+Z')).toEqual({ key: 'z', mod: true, shift: true, alt: false })
     expect(parseChord('Escape')).toEqual({ key: 'Escape', mod: false, shift: false, alt: false })
   })
+  it('handles the plus key and the Space name', () => {
+    expect(parseChord('Mod++')).toEqual({ key: '+', mod: true, shift: false, alt: false })
+    expect(parseChord('Mod+Shift++')).toMatchObject({ key: '+', mod: true, shift: true })
+    expect(parseChord('Space')).toMatchObject({ key: ' ' })
+  })
+
   it('rejects unknown modifiers', () => {
     expect(() => parseChord('Hyper+x')).toThrow('Unknown modifier')
   })
@@ -133,6 +139,23 @@ describe('KeyboardEngine', () => {
     off()
     kb.handleKeyDown(key('w'))
     expect(run).not.toHaveBeenCalled()
+  })
+
+  it('tracks Space as held, and still lets a Space binding claim the key', () => {
+    const kb = new KeyboardEngine()
+    const run = vi.fn<() => void>()
+    kb.register({ keys: ['Space'], run })
+    const e = key(' ', { code: 'Space' })
+    expect(kb.handleKeyDown(e)).toBe(true)
+    expect(kb.isHeld(' ')).toBe(true)
+    kb.handleKeyUp({ key: ' ' })
+    expect(kb.isHeld(' ')).toBe(false)
+  })
+
+  it('does not count Space typed into a text field as held', () => {
+    const kb = new KeyboardEngine()
+    kb.handleKeyDown(key(' ', { code: 'Space', target: { tagName: 'INPUT', type: 'text' } }))
+    expect(kb.isHeld(' ')).toBe(false)
   })
 
   it('tracks held modifiers and clears them on blur', () => {

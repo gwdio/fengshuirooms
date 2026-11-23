@@ -5,7 +5,8 @@ import assert from 'node:assert/strict'
 import { after, before } from 'node:test'
 import puppeteer, { type Browser, type Page } from 'puppeteer-core'
 
-// Must match apps/web/src/editor/viewport.ts until zoom/pan exists.
+// Pixels per inch at 100% zoom (core PX_PER_INCH). Inch-based helpers assume the default view
+// (100%, no pan), which every test starts from; use canvasPx for zoomed or panned views.
 const PX_PER_INCH = 4
 
 declare global {
@@ -25,6 +26,10 @@ export interface App {
   setStorage(key: string, value: string): Promise<void>
   /** Text of the notice bar, or null if none is shown. */
   notice(): Promise<string | null>
+  /** The zoom widget's percentage text, e.g. "100%". */
+  zoomLabel(): Promise<string>
+  /** Page coordinates of a point given in raw canvas pixels (ignores zoom/pan). */
+  canvasPx(x: number, y: number): [number, number]
   click(x: number, y: number): Promise<void>
   /** Press at (x1,y1), move in steps, release at (x2,y2). */
   drag(x1: number, y1: number, x2: number, y2: number): Promise<void>
@@ -108,6 +113,8 @@ export function useApp(): App {
       key,
       value,
     ] as const)
+  app.zoomLabel = async () => app.page.$eval('[data-zoom]', (b) => b.textContent?.trim() ?? '')
+  app.canvasPx = (x, y) => [origin.x + x, origin.y + y]
   app.notice = async () =>
     app.page.evaluate(() => document.querySelector('[role="alert"]')?.textContent ?? null)
   // Pointer helpers settle first: tests fire input back to back, and a press that lands before
@@ -172,37 +179,20 @@ export function useApp(): App {
     for (const k of keys.reverse()) await app.page.keyboard.up(k)
   }
   app.walls = async () =>
-    app.page.evaluate((ppi) => {
-      const layer = window.Konva.stages[0]!.getLayers()[1]!
-      return layer
-        .getChildren()
-        .map((g) => {
-          const line = (
-            g as unknown as { getChildren(): { points(): number[] }[] }
-          ).getChildren()[0]!
-          return line
-            .points()
-            .map((v) => v / ppi)
-            .join(',')
-        })
-        .sort()
-    }, PX_PER_INCH)
+    (await app.segments()).map((seg) => seg.slice(seg.indexOf(':') + 1)).sort()
   app.segments = async () =>
-    app.page.evaluate((ppi) => {
+    app.page.evaluate(() => {
+      type WorldLine = { getAttr(k: string): number[] }
       const layer = window.Konva.stages[0]!.getLayers()[1]!
       return layer
         .getChildren()
         .map((g) => {
-          const line = (
-            g as unknown as { getChildren(): { points(): number[] }[] }
-          ).getChildren()[0]!
-          return `${g.name()}:${line
-            .points()
-            .map((v) => v / ppi)
-            .join(',')}`
+          const line = (g as unknown as { getChildren(): WorldLine[] }).getChildren()[0]!
+          const world = line.getAttr('world').map((v) => Math.round(v * 1000) / 1000)
+          return `${g.name()}:${world.join(',')}`
         })
         .sort()
-    }, PX_PER_INCH)
+    })
   app.pressed = async () =>
     app.page.$$eval('button[aria-pressed="true"]', (bs) =>
       bs.map((b) => b.textContent?.trim()).join(' | '),

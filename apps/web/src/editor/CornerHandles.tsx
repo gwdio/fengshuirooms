@@ -6,7 +6,7 @@ import { setDrag, useEditDrag } from './drag.ts'
 import { SnapMarker } from './SnapMarker.tsx'
 import { snapCorner } from './snapping.ts'
 import { setStageCursor } from './stageCursor.ts'
-import { toScreen } from './viewport.ts'
+import { toScreen, useViewport } from './viewport.ts'
 
 const HANDLE_COLOR = '#0f766e'
 
@@ -19,6 +19,7 @@ export function CornerHandles() {
   const walls = useWalls()
   const selectedIds = useSelection((s) => s.selectedIds)
   const drag = useEditDrag((s) => s.drag)
+  useViewport() // redraw on zoom/pan
   const selectedCorners = new Set(
     walls
       .filter((w) => selectedIds.includes(w.id))
