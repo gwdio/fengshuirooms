@@ -19,7 +19,8 @@ Update this line whenever a phase closes.
 | 6   | [Real-time collab](phase-6-realtime.md)      | 2–3 weekends | + WebSocket API    | Two browsers edit the same plan live       |
 | 7   | [Optional / V3](phase-7-optional.md)         | —            | —                  | Pick à la carte                            |
 
-Phases 1–3 are V1 (local), 4–6 are V2 (deployed), 7 is V3. Feature details live in
+Phases 1–3 are V1 (local), 4–6 are V2 (deployed), 7 is V3. Small improvements to existing features
+that aren't in any phase yet live in [refinements.md](refinements.md). Feature details live in
 [product/features.md](../product/features.md); phase files say _when_ and _done-when_, not _what exactly_.
 
 ## Principles
@@ -31,6 +32,8 @@ Phases 1–3 are V1 (local), 4–6 are V2 (deployed), 7 is V3. Feature details l
 
 ## How to work a phase
 
+0. When a phase starts, review [refinements.md](refinements.md) with the owner and move the items
+   worth doing into the phase's checklist.
 1. Pick the first unchecked item in the current phase file.
 2. Build it with tests for any logic in `packages/core`.
 3. Tick the box in the same PR. If scope changed, edit the checklist rather than leaving it stale.

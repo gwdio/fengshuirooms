@@ -7,7 +7,8 @@ have caught live. The docs carry memory between sessions, so keep them accurate.
 ## Orient
 
 1. [docs/roadmap/README.md](docs/roadmap/README.md) — current phase
-2. That phase's file — the first unchecked item is the default next task
+2. That phase's file — the first unchecked item is the default next task. When starting a new
+   phase, first review [refinements.md](docs/roadmap/refinements.md) with the owner and pull items in.
 3. [docs/architecture/overview.md](docs/architecture/overview.md) — layout and stack
 
 ## Current scope
