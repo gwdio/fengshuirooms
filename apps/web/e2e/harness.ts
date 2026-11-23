@@ -110,8 +110,27 @@ export function useApp(): App {
     ] as const)
   app.notice = async () =>
     app.page.evaluate(() => document.querySelector('[role="alert"]')?.textContent ?? null)
-  app.click = async (x, y) => app.page.mouse.click(...screen(x, y))
+  // Pointer helpers settle first: tests fire input back to back, and a press that lands before
+  // React has committed the previous action and Konva has redrawn its hit graph can miss a shape
+  // that was just added (e.g. grabbing a freshly placed door hit nothing, intermittently).
+  const settle = () =>
+    app.page.evaluate(
+      () =>
+        new Promise<void>((resolve) =>
+          requestAnimationFrame(() =>
+            requestAnimationFrame(() => {
+              for (const stage of window.Konva.stages) stage.draw()
+              resolve()
+            }),
+          ),
+        ),
+    )
+  app.click = async (x, y) => {
+    await settle()
+    await app.page.mouse.click(...screen(x, y))
+  }
   app.drag = async (x1, y1, x2, y2) => {
+    await settle()
     await app.page.mouse.move(...screen(x1, y1))
     await app.page.mouse.down()
     await app.page.mouse.move(...screen(x2, y2), { steps: 10 })
@@ -133,6 +152,7 @@ export function useApp(): App {
   }
   app.dragOut = async (x, y) => {
     const panel = await paletteCenter('window')
+    await settle()
     await app.page.mouse.move(...screen(x, y))
     await app.page.mouse.down()
     await app.page.mouse.move(panel.x, panel.y + 120, { steps: 12 })
